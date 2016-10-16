@@ -12,13 +12,10 @@ class SparkParsing {
 
   private val sc = new SparkContext(conf)
 
-  private var classpath = ""
-
-  def setFile(classPath: String) = classpath = classPath
-
-  def count = {
+  def count(classpath: String) = {
     sc.textFile(classpath)
-      .flatMap(line => line.split(","))
+    .map(str => str.replaceAll("[,.!?:]", ""))
+      .flatMap(line => line.split(" "))
       .map(word => (word, 1))
       .reduceByKey(_ + _)
   }
