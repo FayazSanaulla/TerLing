@@ -25,5 +25,6 @@ object SparkParsing extends SparkConfig {
   def split(str: String): Array[String] = str.split(" ")
 
   def rddFromFile(path: String)(implicit sc: SparkContext) = sc.textFile(path)
+
 }
 

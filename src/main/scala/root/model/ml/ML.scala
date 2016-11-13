@@ -1,6 +1,6 @@
 package root.model.ml
 
-import org.apache.spark.mllib.classification.{LogisticRegressionWithLBFGS, LogisticRegressionWithSGD}
+import org.apache.spark.mllib.classification.LogisticRegressionWithLBFGS
 import org.apache.spark.mllib.feature.HashingTF
 import org.apache.spark.mllib.regression.LabeledPoint
 import root.model.parser.SparkParsing._
@@ -12,7 +12,7 @@ import root.model.parser.SparkParsing._
 object ML extends App {
 
   val positive = rddFromFile("/home/faiaz/scala.txt").map(clear)
-  val negative = rddFromFile("/home/faiaz/kotlin.txt").map(clear)
+  val negative = rddFromFile("/home/faiaz/other.txt").map(clear)
 
   val tf = new HashingTF(numFeatures = 10000)
 
@@ -27,6 +27,6 @@ object ML extends App {
 
   val model = new LogisticRegressionWithLBFGS().run(trainData)
 
-  println(s"pos result: ${model.predict(tf.transform("scala programming language".split(" ")))}")
-  println(s"neg result: ${model.predict(tf.transform("fsdfasfasfafafasdfafa".split(" ")))}")
+  println(s"pos result: ${model.predict(tf.transform("adsfs adfs adfsadfsad asdaa".split(" ")))}")
+  println(s"neg result: ${model.predict(tf.transform("sdfa dfas fasdfsadfs dfsadf".split(" ")))}")
 }
