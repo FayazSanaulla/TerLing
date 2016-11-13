@@ -13,5 +13,5 @@ trait SparkConfig {
     .setAppName("bigData")
     .set("spark.executor.memory", "1g")
 
-  val sc = new SparkContext(conf)
+  implicit val sc = new SparkContext(conf)
 }

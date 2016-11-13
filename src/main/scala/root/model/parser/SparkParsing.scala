@@ -1,5 +1,6 @@
 package root.model.parser
 
+import org.apache.spark.SparkContext
 import root.util.SparkConfig
 
 /**
@@ -7,7 +8,7 @@ import root.util.SparkConfig
   */
 object SparkParsing extends SparkConfig {
 
-  def count(from: String, to: String) = {
+  def count(from: String, to: String)(implicit sc: SparkContext) = {
     rddFromFile(from)
       .map(clear)
       .flatMap(split)
@@ -23,6 +24,6 @@ object SparkParsing extends SparkConfig {
 
   def split(str: String): Array[String] = str.split(" ")
 
-  def rddFromFile(path: String) = sc.textFile(path)
+  def rddFromFile(path: String)(implicit sc: SparkContext) = sc.textFile(path)
 }
 
