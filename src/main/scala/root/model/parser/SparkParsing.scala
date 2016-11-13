@@ -5,19 +5,24 @@ import root.util.SparkConfig
 /**
   * Created by faiaz on 14.10.16.
   */
-class SparkParsing extends SparkConfig {
+object SparkParsing extends SparkConfig {
 
-  def count(classpath: String) = {
-    sc.textFile(classpath)
-    .map(str => str.replaceAll("[,.!?:]", ""))
-      .flatMap(line => line.split(" "))
+  def count(from: String, to: String) = {
+    rddFromFile(from)
+      .map(clear)
+      .flatMap(split)
+      .filter(lengthPredicate)
       .map(word => (word, 1))
       .reduceByKey(_ + _)
+      .saveAsTextFile(to)
   }
 
-  def clear(classpath: String) = {
-    sc.textFile(classpath)
-      .map(str => str.replaceAll("[,.!?:]", ""))
-  }
+  def lengthPredicate(str: String): Boolean = str.length > 2
+
+  def clear(str: String): String = str.replaceAll("[,.!?:]", "")
+
+  def split(str: String): Array[String] = str.split(" ")
+
+  def rddFromFile(path: String) = sc.textFile(path)
 }
 

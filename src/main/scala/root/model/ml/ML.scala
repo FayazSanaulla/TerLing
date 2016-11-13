@@ -3,8 +3,7 @@ package root.model.ml
 import org.apache.spark.mllib.classification.{LogisticRegressionWithLBFGS, LogisticRegressionWithSGD}
 import org.apache.spark.mllib.feature.HashingTF
 import org.apache.spark.mllib.regression.LabeledPoint
-import root.model.parser.SparkParsing
-import root.util.SparkConfig
+import root.model.parser.SparkParsing._
 
 
 /**
@@ -12,10 +11,8 @@ import root.util.SparkConfig
   */
 object ML extends App {
 
-  val spark = new SparkParsing
-
-  val positive = spark.clear("/home/faiaz/scala.txt")
-  val negative = spark.clear("/home/faiaz/kotlin.txt")
+  val positive = rddFromFile("/home/faiaz/scala.txt").map(clear)
+  val negative = rddFromFile("/home/faiaz/kotlin.txt").map(clear)
 
   val tf = new HashingTF(numFeatures = 10000)
 
