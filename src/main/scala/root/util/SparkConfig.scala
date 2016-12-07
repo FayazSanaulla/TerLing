@@ -1,7 +1,7 @@
 package root.util
 
-import org.apache.spark.SparkConf
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.SparkSession
 
 /**
   * Created by faiaz on 16.10.16.
@@ -14,4 +14,9 @@ trait SparkConfig {
     .set("spark.executor.memory", "1g")
 
   implicit val sc = new SparkContext(conf)
+
+  val spark = SparkSession
+    .builder()
+    .appName("Ml")
+    .getOrCreate()
 }
