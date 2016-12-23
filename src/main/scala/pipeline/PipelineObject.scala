@@ -1,11 +1,11 @@
 package pipeline
 
+import config.SparkConfig
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature.{HashingTF, Tokenizer}
 import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.ml.{Pipeline, PipelineModel}
 import org.apache.spark.sql.{DataFrame, Row}
-import root.util.SparkConfig
 
 /**
   * Created by faiaz on 07.12.16.
@@ -13,9 +13,9 @@ import root.util.SparkConfig
 object PipelineObject extends App with SparkConfig {
 
   val training: DataFrame = spark.createDataFrame(Seq(
-    (0L, "a b c d e spark", 1.0),
-    (1L, "b d", 0.0),
-    (2L, "spark f g h", 1.0),
+    (0L, "testing normal", 1.0),
+    (1L, "smart", 0.0),
+    (2L, "spark mllib", 1.0),
     (3L, "hadoop mapreduce", 0.0)
   )).toDF("id", "text", "label")
 
@@ -38,10 +38,10 @@ object PipelineObject extends App with SparkConfig {
   val sameModel = PipelineModel.load("/home/faiaz/spark-fitted-model")
 
   val test = spark.createDataFrame(Seq(
-    (4L, "spark i j k"),
-    (5L, "l m n"),
-    (6L, "mapreduce spark"),
-    (7L, "apache hadoop")
+    (0L, "testing normal"),
+    (1L, "smart"),
+    (2L, "spark mllib"),
+    (3L, "hadoop mapreduce")
   )).toDF("id", "text")
 
   model.transform(test)

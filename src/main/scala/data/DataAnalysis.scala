@@ -1,12 +1,12 @@
-package root.model.parser
+package data
 
+import config.SparkConfig
 import org.apache.spark.SparkContext
-import root.util.SparkConfig
 
 /**
   * Created by faiaz on 14.10.16.
   */
-object SparkParsing extends SparkConfig {
+object DataAnalysis extends SparkConfig {
 
   def count(from: String, to: String)(implicit sc: SparkContext) = {
     rddFromFile(from)

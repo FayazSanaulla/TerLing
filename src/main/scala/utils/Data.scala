@@ -1,4 +1,4 @@
-package root.util
+package utils
 
 /**
   * Created by faiaz on 13.11.16.
