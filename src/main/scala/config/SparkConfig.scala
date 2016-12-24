@@ -1,6 +1,6 @@
 package config
 
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -14,9 +14,11 @@ trait SparkConfig {
     .set("spark.executor.memory", "1g")
 
   implicit val sc = new SparkContext(conf)
+  implicit val sqlContext = new SQLContext(sc)
 
   val spark: SparkSession = SparkSession
     .builder()
     .appName("Ml")
     .getOrCreate()
+
 }
