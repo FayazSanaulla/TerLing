@@ -15,7 +15,6 @@ object PipelineObject extends App {
 
   val training: DataFrame = DataAnalysis.createDF(scalaFile, schema)
   val test = DataAnalysis.createDF(other, schema)
-
   /*val tokenizer = new Tokenizer()
     .setInputCol("text")
     .setOutputCol("words")
