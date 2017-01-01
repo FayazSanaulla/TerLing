@@ -12,6 +12,7 @@ trait SparkConfig {
     .setMaster("local[4]")
     .setAppName("bigData")
     .set("spark.executor.memory", "1g")
+    .set("spark.cores.max", "4")
 
   implicit val sc = new SparkContext(conf)
   implicit val sqlContext = new SQLContext(sc)
