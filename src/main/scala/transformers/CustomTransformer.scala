@@ -1,4 +1,4 @@
-package pipeline.transformers
+package transformers
 
 import org.apache.spark.ml.param.{Param, Params}
 
