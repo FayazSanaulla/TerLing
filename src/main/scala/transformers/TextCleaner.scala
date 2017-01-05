@@ -25,9 +25,11 @@ class TextCleaner(override val uid: String) extends Transformer with CustomTrans
     val t = udf {
       sentences: String =>
         sentences
-          .replaceAll("[,!?:]", "")
+          .replaceAll("[,!?:\\.]", "")
           .replaceAll("""\[[0-9]+]""", "")
           .replace("-", " ")
+          .split(" ")
+          .filterNot(_ == "")
     }
 
     dataset.select(t(col($(inputCol))).as($(outputCol)))
