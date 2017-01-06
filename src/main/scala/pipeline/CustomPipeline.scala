@@ -28,6 +28,11 @@ object CustomPipeline extends App with SparkConfig {
   val pipeline = new Pipeline()
     .setStages(Array(textCleaner, stopWordsRemover))
 
-  val model = pipeline.fit(training)
+//  val model = pipeline.fit(training)
 //  model.transform(training).show()
+
+  val tc = textCleaner.transform(training)
+  val swr = stopWordsRemover.transform(tc)
+  swr.drop("cleaned").collect().foreach(println)
+
 }

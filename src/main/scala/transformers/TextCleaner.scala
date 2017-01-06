@@ -30,6 +30,7 @@ class TextCleaner(override val uid: String) extends Transformer with CustomTrans
           .replace("-", " ")
           .split(" ")
           .filterNot(_ == "")
+          .distinct
     }
 
     dataset.select(t(col($(inputCol))).as($(outputCol)))
