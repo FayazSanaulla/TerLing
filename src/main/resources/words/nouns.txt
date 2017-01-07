@@ -1,0 +1,10 @@
+airport
+airfield
+airdrome
+hangar
+airstrip
+harbor
+subway
+metro
+parking
+public place
