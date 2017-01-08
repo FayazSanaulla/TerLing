@@ -9,17 +9,16 @@ import org.apache.spark.{SparkConf, SparkContext}
 trait SparkConfig {
 
   val conf: SparkConf = new SparkConf()
-    .setMaster("local[4]")
+    .setMaster("local[*]")
     .setAppName("bigData")
     .set("spark.executor.memory", "1g")
     .set("spark.cores.max", "4")
 
-  implicit val sc = new SparkContext(conf)
-  implicit val sqlContext = new SQLContext(sc)
+  val sc = new SparkContext(conf)
+  val sqlContext = new SQLContext(sc)
 
   val spark: SparkSession = SparkSession
     .builder()
-    .appName("Ml")
     .getOrCreate()
 
 }

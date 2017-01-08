@@ -6,7 +6,7 @@ import epic.sequences.CRF
 import epic.trees.AnnotatedLabel
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.feature.StopWordsRemover
-import transformers.{LinguisticParser, TextCleaner}
+import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner}
 
 /**
   * Created by faiaz on 31.12.16.
@@ -19,7 +19,8 @@ object CustomPipeline extends App with SparkConfig {
 
   val segmenter = MLSentenceSegmenter.bundled().get
 
-  val training = sc.textFile(en_text_file_1).flatMap(segmenter).toDF("sentences")
+  val training = sc.textFile(en_text_file_1).flatMap(segmenter).toDF("sentences").cache()
+  val sample = sc.textFile(en_text_file).flatMap(segmenter).toDF("sentences").cache()
 
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
@@ -33,13 +34,16 @@ object CustomPipeline extends App with SparkConfig {
     .setInputCol(stopWordsRemover.getOutputCol)
     .setOutputCol("parsed")
 
-  val pipeline = new Pipeline()
-    .setStages(Array(textCleaner, stopWordsRemover, lingParser))
+  val dangerousEstimator = new DangerousWordsEstimator()
+    .setInputCol(lingParser.getOutputCol)
+    .setOutputCol("estimated")
 
+  val pipeline = new Pipeline()
+    .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator))
 
   val tc = textCleaner.transform(training)
   val swr = stopWordsRemover.transform(tc)
   val tf = lingParser.transform(swr)
-  //swr.drop("cleaned").collect().foreach(println)
-  tf.show()
+  val est = dangerousEstimator.transform(tf)
+  est.collect().foreach(println)
 }

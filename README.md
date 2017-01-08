@@ -1,1 +1,1 @@
-Bachelor work for VNTU. Using Apache Spark and Scala language
+Bachelor work for VNTU. Using Apache Spark and Scala language. Linguistic text analysis for detecting terrorists dangerous.
