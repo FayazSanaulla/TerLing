@@ -25,7 +25,7 @@ class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner
     val t = udf {
       sentences: String =>
         sentences
-          .replaceAll("[,!?:\\.&^%$*@]", "")
+          .replaceAll("[,!?:\\.&^%$*@()]", "")
           .replaceAll("""\[[0-9]+]""", "")
           .replace("-", " ")
           .split(" ")

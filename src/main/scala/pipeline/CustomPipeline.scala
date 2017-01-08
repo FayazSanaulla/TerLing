@@ -12,7 +12,7 @@ import transformers.{LinguisticParser, TextCleaner}
   * Created by faiaz on 31.12.16.
   */
 object CustomPipeline extends App with SparkConfig {
-  import config.Utils.en_text_file
+  import config.Paths.en_text_file
   import sqlContext.implicits._
 
   implicit val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
@@ -29,19 +29,17 @@ object CustomPipeline extends App with SparkConfig {
     .setInputCol(textCleaner.getOutputCol)
     .setOutputCol("filtered")
 
-  val testFilter = new LinguisticParser()
+  val lingParser = new LinguisticParser()
     .setInputCol(stopWordsRemover.getOutputCol)
-    .setOutputCol("filtered1")
+    .setOutputCol("parsed")
 
   val pipeline = new Pipeline()
-    .setStages(Array(textCleaner, stopWordsRemover, testFilter))
+    .setStages(Array(textCleaner, stopWordsRemover, lingParser))
 
-//  val model = pipeline.fit(training)
-//  model.transform(training).show()
 
   val tc = textCleaner.transform(training)
   val swr = stopWordsRemover.transform(tc)
-  val tf = testFilter.transform(swr)
+  val tf = lingParser.transform(swr)
   //swr.drop("cleaned").collect().foreach(println)
   tf.collect().foreach(println)
 }
