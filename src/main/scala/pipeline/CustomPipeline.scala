@@ -12,14 +12,14 @@ import transformers.{LinguisticParser, TextCleaner}
   * Created by faiaz on 31.12.16.
   */
 object CustomPipeline extends App with SparkConfig {
-  import config.Paths.en_text_file
+  import config.Paths._
   import sqlContext.implicits._
 
   implicit val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
 
   val segmenter = MLSentenceSegmenter.bundled().get
 
-  val training = sc.textFile(en_text_file).flatMap(segmenter).toDF("sentences")
+  val training = sc.textFile(en_text_file_1).flatMap(segmenter).toDF("sentences")
 
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
@@ -41,5 +41,5 @@ object CustomPipeline extends App with SparkConfig {
   val swr = stopWordsRemover.transform(tc)
   val tf = lingParser.transform(swr)
   //swr.drop("cleaned").collect().foreach(println)
-  tf.collect().foreach(println)
+  tf.show()
 }
