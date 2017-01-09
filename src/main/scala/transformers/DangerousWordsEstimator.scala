@@ -12,7 +12,9 @@ import scala.collection.mutable
 /**
   * Created by faiaz on 08.01.17.
   */
-class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID("dangerestimator")) extends Transformer with CustomTransformer {
+class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID("dangerEstimator"))
+  extends Transformer
+    with CustomTransformer {
   import DangerousWordsEstimator.loadDangerousWords
 
   private val words = loadDangerousWords.map(w => {

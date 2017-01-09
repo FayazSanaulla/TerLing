@@ -5,6 +5,7 @@ import epic.preprocess.MLSentenceSegmenter
 import epic.sequences.CRF
 import epic.trees.AnnotatedLabel
 import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature.StopWordsRemover
 import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner}
 
@@ -20,7 +21,7 @@ object CustomPipeline extends App with SparkConfig {
   val segmenter = MLSentenceSegmenter.bundled().get
 
   val training = sc.textFile(en_text_file_1).flatMap(segmenter).toDF("sentences").cache()
-  val sample = sc.textFile(en_text_file).flatMap(segmenter).toDF("sentences").cache()
+//  val sample = sc.textFile(en_text_file).flatMap(segmenter).toDF("sentences").cache()
 
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
@@ -36,10 +37,14 @@ object CustomPipeline extends App with SparkConfig {
 
   val dangerousEstimator = new DangerousWordsEstimator()
     .setInputCol(lingParser.getOutputCol)
-    .setOutputCol("estimated")
+    .setOutputCol("features")
+
+  val lr = new LogisticRegression()
+    .setMaxIter(10)
+    .setRegParam(0.01)
 
   val pipeline = new Pipeline()
-    .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator))
+    .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, lr))
 
   val tc = textCleaner.transform(training)
   val swr = stopWordsRemover.transform(tc)
