@@ -27,11 +27,21 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
   override def transform(dataset: Dataset[_]): DataFrame = {
-    val t = udf {
+    val wordCount = udf {
       arr: mutable.WrappedArray[String] =>
-        arr.map(w => (w, words.getOrElse(w, 0.0)))
+        val size = arr.size
+        val sumOfArray = arr.map(w => words.getOrElse(w, 0.0)).sum
+        //val associationPairs = arr.map(println)
+        sumOfArray / size
     }
-    dataset.select(t(col($(inputCol))).as($(outputCol)))
+    val associationPair = udf {
+      arr: mutable.WrappedArray[String] =>
+        arr.map(w => words.getOrElse(w, 0.0)).sum
+    }
+    dataset
+      .select(
+        avg(wordCount(col($(inputCol)))).as("words"),
+        sum(associationPair(col($(inputCol)))).as("pairs"))
   }
 
   override def transformSchema(schema: StructType): StructType = {
