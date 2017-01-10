@@ -10,9 +10,9 @@ import org.apache.spark.sql.{DataFrame, Dataset}
 /**
   * Created by faiaz on 01.01.17.
   */
-class TextCleaner(override val uid: String) extends Transformer with CustomTransformer {
-
-  def this() = this(Identifiable.randomUID("textcleaner"))
+class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner"))
+  extends Transformer
+    with CustomTransformer {
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
@@ -25,9 +25,12 @@ class TextCleaner(override val uid: String) extends Transformer with CustomTrans
     val t = udf {
       sentences: String =>
         sentences
-          .replaceAll("[,!?:]", "")
+          .replaceAll("[,!?:\\.&^%$*@()]", "")
           .replaceAll("""\[[0-9]+]""", "")
           .replace("-", " ")
+          .split(" ")
+          .filterNot(_ == "")
+          .distinct
     }
 
     dataset.select(t(col($(inputCol))).as($(outputCol)))

@@ -1,0 +1,7 @@
+bomb/1.0
+mine/0.9
+device/0.7
+rocket/0.7
+torpedo/0.9
+charge/0.9
+bombshell/0.9

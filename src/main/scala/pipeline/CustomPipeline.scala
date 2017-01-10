@@ -2,43 +2,53 @@ package pipeline
 
 import config.SparkConfig
 import epic.preprocess.MLSentenceSegmenter
+import epic.sequences.CRF
+import epic.trees.AnnotatedLabel
+import org.apache.spark.ml.Pipeline
+import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature.StopWordsRemover
-import transformers.TextCleaner
+import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner}
 
 /**
   * Created by faiaz on 31.12.16.
   */
 object CustomPipeline extends App with SparkConfig {
-  import config.Utils.en_text_file
+  import config.Paths._
   import sqlContext.implicits._
 
-  private def removeUselessSymbols(str: String): String = {
-    str.replaceAll("[,!?:]", "")
-      .replaceAll("""\[[0-9]+]""", "")
-      .replace("-", " ")
+  implicit val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
 
-  }
   val segmenter = MLSentenceSegmenter.bundled().get
 
-  val text = sc.textFile("/home/faiaz/testData/scala.txt")
-    .map(removeUselessSymbols)
-    .flatMap(segmenter)
-    .map(_.replaceAll("\\.", ""))
-    .map(_.split(" "))
-    .toDF("sentences")
-
-  val stopWordsRemover = new StopWordsRemover()
-    .setInputCol("sentences")
-    .setOutputCol("filtered")
-
-  val test = sc.textFile(en_text_file).flatMap(segmenter).toDF("sentences")
+  val training = sc.textFile(en_text_file_1).flatMap(segmenter).toDF("sentences").cache()
+//  val sample = sc.textFile(en_text_file).flatMap(segmenter).toDF("sentences").cache()
 
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
     .setOutputCol("cleaned")
 
-  //stopWordsRemover.transform(text).drop("sentences").show()
-  //textCleaner.transform(test).show()
-  test.show()
+  val stopWordsRemover = new StopWordsRemover()
+    .setInputCol(textCleaner.getOutputCol)
+    .setOutputCol("filtered")
 
+  val lingParser = new LinguisticParser()
+    .setInputCol(stopWordsRemover.getOutputCol)
+    .setOutputCol("parsed")
+
+  val dangerousEstimator = new DangerousWordsEstimator()
+    .setInputCol(lingParser.getOutputCol)
+    .setOutputCol("features")
+
+  val lr = new LogisticRegression()
+    .setMaxIter(10)
+    .setRegParam(0.01)
+
+  val pipeline = new Pipeline()
+    .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, lr))
+
+  val tc = textCleaner.transform(training)
+  val swr = stopWordsRemover.transform(tc)
+  val tf = lingParser.transform(swr)
+  val est = dangerousEstimator.transform(tf)
+  est.collect().foreach(println)
 }
