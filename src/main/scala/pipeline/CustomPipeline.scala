@@ -50,5 +50,5 @@ object CustomPipeline extends App with SparkConfig {
   val swr = stopWordsRemover.transform(tc)
   val tf = lingParser.transform(swr)
   val est = dangerousEstimator.transform(tf)
-  est.collect().foreach(println)
+  est.show()
 }
