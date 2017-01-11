@@ -13,15 +13,13 @@ import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner}
   * Created by faiaz on 31.12.16.
   */
 object CustomPipeline extends App with SparkConfig {
-  import config.Paths._
   import sqlContext.implicits._
 
   implicit val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
 
   val segmenter = MLSentenceSegmenter.bundled().get
 
-  val training = sc.textFile(en_text_file_1).flatMap(segmenter).toDF("sentences").cache()
-//  val sample = sc.textFile(en_text_file).flatMap(segmenter).toDF("sentences").cache()
+  val training = sc.textFile("file:///home/faiaz/IdeaProjects/big_data/src/main/resources/data/en_text_1.txt").flatMap(segmenter).toDF("sentences").cache()
 
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
@@ -48,6 +46,7 @@ object CustomPipeline extends App with SparkConfig {
 
   val tc = textCleaner.transform(training)
   val swr = stopWordsRemover.transform(tc)
+//  val tf = lingParser.transform(swr).show()
   val tf = lingParser.transform(swr)
   val est = dangerousEstimator.transform(tf)
   est.show()

@@ -32,7 +32,6 @@ class LinguisticParser(override val uid: String = Identifiable.randomUID("lingui
             (arr(0), arr(1))
           })
           .filter(x => x._2.contains("NN") || x._2.contains("VB"))
-          .map(_._1)
     }
     dataset.select(t(col($(inputCol))).as($(outputCol)))
   }

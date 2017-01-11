@@ -15,33 +15,53 @@ import scala.collection.mutable
 class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID("dangerEstimator"))
   extends Transformer
     with CustomTransformer {
-  import DangerousWordsEstimator.loadDangerousWords
+  import DangerousWordsEstimator._
 
   private val words = loadDangerousWords.map(w => {
-    val arr = w.split("/")
-    (arr(0), arr(1).toDouble)
+    val splitRes = w.split("/")
+    (splitRes(0), splitRes(1).toDouble)
+  }).toMap
+
+  private val associationPairs = loadDangerousPairs.map(w => {
+    val splitRes = w.split("/")
+    ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
   }).toMap
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
   def setOutputCol(value: String): this.type = set(outputCol, value)
-
+  //todo: fix spark class cast error
   override def transform(dataset: Dataset[_]): DataFrame = {
+
     val wordCount = udf {
-      arr: mutable.WrappedArray[String] =>
-        val size = arr.size
-        val sumOfArray = arr.map(w => words.getOrElse(w, 0.0)).sum
-        //val associationPairs = arr.map(println)
-        sumOfArray / size
+      arr: mutable.WrappedArray[(String, String)] =>
+        val nArr = arr.map(_._1)
+
+        val size = nArr.size
+        val sum = nArr.map(w => words.getOrElse(w, 0.0)).sum
+
+        sum / size
     }
+
     val associationPair = udf {
-      arr: mutable.WrappedArray[String] =>
-        arr.map(w => words.getOrElse(w, 0.0)).sum
+      arr: mutable.WrappedArray[(String, String)] =>
+        val (nouns, verbs) = arr.partition(pair => pair._2.contains("NN"))
+        val pairs = for {
+          n <- nouns.map(_._1)
+          v <- verbs.map(_._1)
+        } yield n -> v
+
+        val size = pairs.size
+        val sum = pairs.map(w => associationPairs.getOrElse(w, 0.0)).sum
+
+        sum / size
     }
+
     dataset
       .select(
         avg(wordCount(col($(inputCol)))).as("words"),
-        sum(associationPair(col($(inputCol)))).as("pairs"))
+        avg(associationPair(col($(inputCol)))).as("pairs"))
+
   }
 
   override def transformSchema(schema: StructType): StructType = {
@@ -52,8 +72,14 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
 }
 
 object DangerousWordsEstimator {
+
   def loadDangerousWords: Array[String] = {
-    val is = getClass.getResourceAsStream("/dangerous/nouns.txt")
+    val is = getClass.getResourceAsStream("/dangerous/DangerousWords.txt")
+    scala.io.Source.fromInputStream(is)(scala.io.Codec.UTF8).getLines().toArray
+  }
+
+  def loadDangerousPairs: Array[String] = {
+    val is = getClass.getResourceAsStream("/dangerous/DangerousPairs.txt")
     scala.io.Source.fromInputStream(is)(scala.io.Codec.UTF8).getLines().toArray
   }
 }
