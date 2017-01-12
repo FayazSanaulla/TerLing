@@ -17,40 +17,33 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
     with CustomTransformer {
   import DangerousWordsEstimator._
 
-  private val words = loadDangerousWords.map(w => {
+  private val words = loadResources("/dangerous/dangerousWords.txt").map(w => {
     val splitRes = w.split("/")
     (splitRes(0), splitRes(1).toDouble)
   }).toMap
 
-  private val associationPairs = loadDangerousPairs.map(w => {
+  private val associationPairs = loadResources("/dangerous/dangerousPairs.txt").map(w => {
     val splitRes = w.split("/")
     ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
   }).toMap
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
-  def setOutputCol(value: String): this.type = set(outputCol, value)
-
-  //todo: fix spark class cast error
   override def transform(dataset: Dataset[_]): DataFrame = {
 
     val wordCount = udf {
       arr: mutable.WrappedArray[String] =>
         val res = arr.map(_.split("/")).map(w => words.getOrElse(w.head, 0.0))
-        val size = res.size
-        val sum = res.sum
 
-        sum / size
+        res.sum / res.size
     }
 
     val associationPair = udf {
       arr: mutable.WrappedArray[String] =>
         val (nouns, verbs) = arr.partition(pair => pair.contains("NN"))
-        val nNouns = nouns.map(_.split("/")(0))
-        val nVerbs = verbs.map(_.split("/")(0))
         val pairs = for {
-          n <- nNouns
-          v <- nVerbs
+          n <- nouns.map(_.split("/").head)
+          v <- verbs.map(_.split("/").head)
         } yield n -> v
 
         val size = pairs.size
@@ -61,8 +54,8 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
 
     dataset
       .select(
-        avg(wordCount(col($(inputCol)))).as("avg_danger_woкds"),
-        avg(associationPair(col($(inputCol)))).as("pairs")
+        avg(wordCount(col($(inputCol)))).as("avg_danger_words"),
+        avg(associationPair(col($(inputCol)))).as("avg_danger_pairs")
       )
 
   }
@@ -75,14 +68,8 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
 }
 
 object DangerousWordsEstimator {
-
-  def loadDangerousWords: Array[String] = {
-    val is = getClass.getResourceAsStream("/dangerous/DangerousWords.txt")
-    scala.io.Source.fromInputStream(is)(scala.io.Codec.UTF8).getLines().toArray
-  }
-
-  def loadDangerousPairs: Array[String] = {
-    val is = getClass.getResourceAsStream("/dangerous/DangerousPairs.txt")
+  def loadResources(path: String): Array[String] = {
+    val is = getClass.getResourceAsStream(path)
     scala.io.Source.fromInputStream(is)(scala.io.Codec.UTF8).getLines().toArray
   }
 }

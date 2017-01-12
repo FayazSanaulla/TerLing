@@ -19,7 +19,10 @@ object CustomPipeline extends App with SparkConfig {
 
   val segmenter = MLSentenceSegmenter.bundled().get
 
-  val training = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt").flatMap(segmenter).toDF("sentences").cache()
+  val training = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt")
+    .flatMap(segmenter)
+    .toDF("sentences")
+    .cache()
 
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
@@ -35,7 +38,6 @@ object CustomPipeline extends App with SparkConfig {
 
   val dangerousEstimator = new DangerousWordsEstimator()
     .setInputCol(lingParser.getOutputCol)
-    .setOutputCol("features")
 
   val lr = new LogisticRegression()
     .setMaxIter(10)
@@ -46,7 +48,6 @@ object CustomPipeline extends App with SparkConfig {
 
   val tc = textCleaner.transform(training)
   val swr = stopWordsRemover.transform(tc)
-//  val tf = lingParser.transform(swr).show()
   val tf = lingParser.transform(swr)
   val est = dangerousEstimator.transform(tf)
   est.show()
