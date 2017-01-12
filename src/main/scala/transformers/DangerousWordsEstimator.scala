@@ -30,25 +30,27 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
   def setInputCol(value: String): this.type = set(inputCol, value)
 
   def setOutputCol(value: String): this.type = set(outputCol, value)
+
   //todo: fix spark class cast error
   override def transform(dataset: Dataset[_]): DataFrame = {
 
     val wordCount = udf {
-      arr: mutable.WrappedArray[(String, String)] =>
-        val nArr = arr.map(_._1)
-
-        val size = nArr.size
-        val sum = nArr.map(w => words.getOrElse(w, 0.0)).sum
+      arr: mutable.WrappedArray[String] =>
+        val res = arr.map(_.split("/")).map(w => words.getOrElse(w.head, 0.0))
+        val size = res.size
+        val sum = res.sum
 
         sum / size
     }
 
     val associationPair = udf {
-      arr: mutable.WrappedArray[(String, String)] =>
-        val (nouns, verbs) = arr.partition(pair => pair._2.contains("NN"))
+      arr: mutable.WrappedArray[String] =>
+        val (nouns, verbs) = arr.partition(pair => pair.contains("NN"))
+        val nNouns = nouns.map(_.split("/")(0))
+        val nVerbs = verbs.map(_.split("/")(0))
         val pairs = for {
-          n <- nouns.map(_._1)
-          v <- verbs.map(_._1)
+          n <- nNouns
+          v <- nVerbs
         } yield n -> v
 
         val size = pairs.size
@@ -59,8 +61,9 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
 
     dataset
       .select(
-        avg(wordCount(col($(inputCol)))).as("words"),
-        avg(associationPair(col($(inputCol)))).as("pairs"))
+        avg(wordCount(col($(inputCol)))).as("avg_danger_woкds"),
+        avg(associationPair(col($(inputCol)))).as("pairs")
+      )
 
   }
 

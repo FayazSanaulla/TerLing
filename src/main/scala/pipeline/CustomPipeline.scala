@@ -19,7 +19,7 @@ object CustomPipeline extends App with SparkConfig {
 
   val segmenter = MLSentenceSegmenter.bundled().get
 
-  val training = sc.textFile("file:///home/faiaz/IdeaProjects/big_data/src/main/resources/data/en_text_1.txt").flatMap(segmenter).toDF("sentences").cache()
+  val training = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt").flatMap(segmenter).toDF("sentences").cache()
 
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")

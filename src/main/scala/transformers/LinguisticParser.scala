@@ -27,11 +27,7 @@ class LinguisticParser(override val uid: String = Identifiable.randomUID("lingui
         tg.bestSequence(arr)
           .render
           .split(" ")
-          .map(word => {
-            val arr = word.split("/")
-            (arr(0), arr(1))
-          })
-          .filter(x => x._2.contains("NN") || x._2.contains("VB"))
+          .filter(x => x.contains("NN") || x.contains("VB"))
     }
     dataset.select(t(col($(inputCol))).as($(outputCol)))
   }
