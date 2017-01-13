@@ -15,4 +15,9 @@ trait CustomTransformer extends Params {
   setDefault(outputCol, uid + "__output")
 
   final def getOutputCol: String = $(outputCol)
+
+  def loadResources(path: String): Array[String] = {
+    val is = getClass.getResourceAsStream(path)
+    scala.io.Source.fromInputStream(is)(scala.io.Codec.UTF8).getLines().toArray
+  }
 }

@@ -34,10 +34,16 @@ class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner
                 .split(" ")
                 .filterNot(_ == "")
                 .distinct
+                .mkString(" ")
           )
     }
 
-    dataset.select(explode(t(col($(inputCol)))).as($(outputCol)))
+    dataset
+      .select(
+        col("*"),
+        t(col($(inputCol))).as($(outputCol))
+      )
+      .drop("sentences")
   }
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
 }

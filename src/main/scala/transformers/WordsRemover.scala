@@ -1,7 +1,5 @@
 package transformers
 
-import epic.sequences.CRF
-import epic.trees.AnnotatedLabel
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
@@ -10,29 +8,28 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
 
 import scala.collection.mutable
+
 /**
-  * Created by faiaz on 07.01.17.
+  * Created by faiaz on 13.01.17.
   */
-class LinguisticParser(override val uid: String = Identifiable.randomUID("linguisticparser"))
-  extends Transformer with CustomTransformer {
-  import LinguisticParser._
+class WordsRemover(override val uid: String = Identifiable.randomUID("linguisticparser"))
+  extends Transformer
+    with CustomTransformer {
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
+  private val words = loadResources("/dangerous/english.txt")
+
   override def transform(dataset: Dataset[_]): DataFrame = {
-    val t = udf {
-      arr: mutable.WrappedArray[String] =>
-        arr.map(str =>
-          tagger.bestSequence(str.split(" "))
-          .render.split(" ")
-          .filter(x => x.contains("NN") || x.contains("VB")).mkString(" ")
-        )
+    val t  = udf { arr: mutable.WrappedArray[String] =>
+      arr
+        .map(_.split(" ").filterNot(w => words.contains(w.toLowerCase)))
+        .map(_.mkString(" "))
     }
-    dataset
-      .select(col("*"), t(col($(inputCol))).as($(outputCol)))
-      .drop("cleaned", "filtered")
+
+    dataset.select(col("*"), t(col($(inputCol))).as("filtered")).drop("cleaned")
   }
 
   override def transformSchema(schema: StructType): StructType = {
@@ -40,8 +37,4 @@ class LinguisticParser(override val uid: String = Identifiable.randomUID("lingui
   }
 
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
-}
-
-object LinguisticParser {
-  implicit val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
 }

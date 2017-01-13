@@ -15,7 +15,6 @@ import scala.collection.mutable
 class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID("dangerEstimator"))
   extends Transformer
     with CustomTransformer {
-  import DangerousWordsEstimator._
 
   private val words = loadResources("/dangerous/dangerousWords.txt").map(w => {
     val splitRes = w.split("/")
@@ -56,22 +55,23 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
         4 * sum / size
     }
 
-    dataset
-      .select(
-        split(
-          concat_ws(
-            "/",
-            avg(wordsDanger(col($(inputCol)))),
-            avg(pairsDanger(col($(inputCol))))
-          ),
-          "/").as("features")
-      )
+//    dataset
+//      .select(
+//        split(concat_ws("/", avg(wordsDanger(col($(inputCol)))), avg(pairsDanger(col($(inputCol))))), "/").as("features"),
+//        col("*")
+//      )
 //    dataset
 //      .select(
 //        avg(wordsDanger(col($(inputCol)))).as("words"),
 //        avg(pairsDanger(col($(inputCol)))).as("pairs")
 //      )
-
+    dataset
+      .select(
+        col("*"),
+        wordsDanger(col($(inputCol))),
+        pairsDanger(col($(inputCol)))
+      )
+      .drop("parsed")
   }
 
   override def transformSchema(schema: StructType): StructType = {
@@ -79,11 +79,4 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
   }
 
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
-}
-
-object DangerousWordsEstimator {
-  def loadResources(path: String): Array[String] = {
-    val is = getClass.getResourceAsStream(path)
-    scala.io.Source.fromInputStream(is)(scala.io.Codec.UTF8).getLines().toArray
-  }
 }
