@@ -31,14 +31,14 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
 
   override def transform(dataset: Dataset[_]): DataFrame = {
 
-    val wordCount = udf {
+    val wordsDanger = udf {
       arr: mutable.WrappedArray[String] =>
         val res = arr.map(_.split("/")).map(w => words.getOrElse(w.head, 0.0))
 
         res.sum / res.size
     }
 
-    val associationPair = udf {
+    val pairDanger = udf {
       arr: mutable.WrappedArray[String] =>
         val (nouns, verbs) = arr.partition(pair => pair.contains("NN"))
         val pairs = for {
@@ -46,16 +46,25 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
           v <- verbs.map(_.split("/").head)
         } yield n -> v
 
-        val size = pairs.size
-        val sum = pairs.map(w => associationPairs.getOrElse(w, 0.0)).sum
+        val swapped = pairs.map(_.swap)
+
+        val resPairs = pairs ++ swapped
+
+        val size = resPairs.size
+        val sum = resPairs.map(w => associationPairs.getOrElse(w, 0.0)).sum
 
         sum / size
     }
 
     dataset
       .select(
-        avg(wordCount(col($(inputCol)))).as("avg_danger_words"),
-        avg(associationPair(col($(inputCol)))).as("avg_danger_pairs")
+        split(
+          concat_ws(
+            "/",
+            avg(wordsDanger(col($(inputCol)))),
+            avg(pairDanger(col($(inputCol))))
+          ),
+          "/").as("feature")
       )
 
   }

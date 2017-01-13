@@ -7,6 +7,7 @@ import epic.trees.AnnotatedLabel
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature.StopWordsRemover
+import org.apache.spark.sql.DataFrame
 import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner}
 
 /**
@@ -14,6 +15,8 @@ import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner}
   */
 object CustomPipeline extends App with SparkConfig {
   import sqlContext.implicits._
+
+  def print(df: DataFrame): Unit = df.collect().foreach(println)
 
   implicit val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
 
