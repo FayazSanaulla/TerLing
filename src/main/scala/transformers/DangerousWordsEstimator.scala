@@ -38,7 +38,7 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
         res.sum / res.size
     }
 
-    val pairDanger = udf {
+    val pairsDanger = udf {
       arr: mutable.WrappedArray[String] =>
         val (nouns, verbs) = arr.partition(pair => pair.contains("NN"))
         val pairs = for {
@@ -53,7 +53,7 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
         val size = resPairs.size
         val sum = resPairs.map(w => associationPairs.getOrElse(w, 0.0)).sum
 
-        sum / size
+        4 * sum / size
     }
 
     dataset
@@ -62,10 +62,15 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
           concat_ws(
             "/",
             avg(wordsDanger(col($(inputCol)))),
-            avg(pairDanger(col($(inputCol))))
+            avg(pairsDanger(col($(inputCol))))
           ),
-          "/").as("feature")
+          "/").as("features")
       )
+//    dataset
+//      .select(
+//        avg(wordsDanger(col($(inputCol)))).as("words"),
+//        avg(pairsDanger(col($(inputCol)))).as("pairs")
+//      )
 
   }
 

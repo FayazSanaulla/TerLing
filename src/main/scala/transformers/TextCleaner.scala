@@ -1,5 +1,6 @@
 package transformers
 
+import epic.preprocess.MLSentenceSegmenter
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
@@ -13,6 +14,7 @@ import org.apache.spark.sql.{DataFrame, Dataset}
 class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner"))
   extends Transformer
     with CustomTransformer {
+  import TextCleaner._
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
@@ -25,15 +27,21 @@ class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner
     val t = udf {
       sentences: String =>
         sentences
-          .replaceAll("[,!?:\\.&^%$*@()]", "")
-          .replaceAll("""\[[0-9]+]""", "")
-          .replace("-", " ")
-          .split(" ")
-          .filterNot(_ == "")
-          .distinct
+          .flatMap(segmenter)
+          .map(_.replaceAll("[,!?:\\.&^%$*@()]", "")
+                .replaceAll("""\[[0-9]+]""", "")
+                .replace("-", " ")
+                .split(" ")
+                .filterNot(_ == "")
+                .distinct
+          )
     }
 
-    dataset.select(t(col($(inputCol))).as($(outputCol)))
+    dataset.select(explode(t(col($(inputCol)))).as($(outputCol)))
   }
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
+}
+
+object TextCleaner {
+  implicit val segmenter: MLSentenceSegmenter = MLSentenceSegmenter.bundled().get
 }

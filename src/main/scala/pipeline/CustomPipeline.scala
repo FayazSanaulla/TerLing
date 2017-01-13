@@ -1,9 +1,6 @@
 package pipeline
 
 import config.SparkConfig
-import epic.preprocess.MLSentenceSegmenter
-import epic.sequences.CRF
-import epic.trees.AnnotatedLabel
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature.StopWordsRemover
@@ -18,12 +15,7 @@ object CustomPipeline extends App with SparkConfig {
 
   def print(df: DataFrame): Unit = df.collect().foreach(println)
 
-  implicit val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
-
-  val segmenter = MLSentenceSegmenter.bundled().get
-
-  val training = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt")
-    .flatMap(segmenter)
+  val training = sc.textFile("file:///home/faiaz/IdeaProjects/big_data/src/main/resources/data/en_text_1.txt")
     .toDF("sentences")
     .cache()
 
@@ -44,7 +36,7 @@ object CustomPipeline extends App with SparkConfig {
 
   val lr = new LogisticRegression()
     .setMaxIter(10)
-    .setRegParam(0.01)
+    .setRegParam(0.001)
 
   val pipeline = new Pipeline()
     .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, lr))
