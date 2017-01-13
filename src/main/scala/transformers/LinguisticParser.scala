@@ -15,7 +15,8 @@ import scala.collection.mutable
   */
 class LinguisticParser(override val uid: String = Identifiable.randomUID("linguisticparser"))
   extends Transformer with CustomTransformer {
-  import LinguisticParser._
+
+  private val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
@@ -42,6 +43,3 @@ class LinguisticParser(override val uid: String = Identifiable.randomUID("lingui
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
 }
 
-object LinguisticParser {
-  implicit val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
-}

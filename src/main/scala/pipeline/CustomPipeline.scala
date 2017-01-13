@@ -11,9 +11,8 @@ import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner, Wor
   */
 object CustomPipeline extends App with SparkConfig {
   import sqlContext.implicits._
-  import utils.Helper._
 
-  val training = sc.textFile("file:///home/faiaz/IdeaProjects/big_data/src/main/resources/data/en_text_1.txt")
+  val training = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt")
     .toDF("sentences")
     .withColumn("label", lit(1.0))
     .cache()
@@ -45,8 +44,6 @@ object CustomPipeline extends App with SparkConfig {
   val tc = textCleaner.transform(training)
   val swr = stopWordsRemover.transform(tc)
   val lp = lingParser.transform(swr)
-  print(lp)
-//  lp.show()
-//  val est = dangerousEstimator.transform(lp)
-//  est.show()
+  val est = dangerousEstimator.transform(lp)
+  est.show()
 }

@@ -14,7 +14,8 @@ import org.apache.spark.sql.{DataFrame, Dataset}
 class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner"))
   extends Transformer
     with CustomTransformer {
-  import TextCleaner._
+
+  private implicit val segmenter: MLSentenceSegmenter = MLSentenceSegmenter.bundled().get
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
@@ -46,8 +47,4 @@ class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner
       .drop("sentences")
   }
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
-}
-
-object TextCleaner {
-  implicit val segmenter: MLSentenceSegmenter = MLSentenceSegmenter.bundled().get
 }
