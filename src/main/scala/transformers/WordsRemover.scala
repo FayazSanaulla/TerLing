@@ -20,20 +20,24 @@ class WordsRemover(override val uid: String = Identifiable.randomUID("linguistic
 
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
-  private val words = loadResources("/dangerous/english.txt")
+  private val words = loadResources("/stopWords/english.txt")
 
   override def transform(dataset: Dataset[_]): DataFrame = {
+
+    val outputSchema = transformSchema(dataset.schema)
+    val metadata = outputSchema($(outputCol)).metadata
+
     val t  = udf { arr: mutable.WrappedArray[String] =>
       arr
         .map(_.split(" ").filterNot(w => words.contains(w.toLowerCase)))
         .map(_.mkString(" "))
     }
 
-    dataset.select(col("*"), t(col($(inputCol))).as("filtered")).drop("cleaned")
+    dataset.select(col("*"), t(col($(inputCol))).as($(outputCol), metadata))
   }
 
   override def transformSchema(schema: StructType): StructType = {
-    StructType(schema.fields :+ StructField(outputCol.name, StringType, false))
+    StructType(schema.fields :+ StructField(outputCol.name, StringType, nullable = false))
   }
 
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}

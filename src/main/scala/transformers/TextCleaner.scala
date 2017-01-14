@@ -22,9 +22,13 @@ class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
   override def transformSchema(schema: StructType): StructType = {
-    StructType(schema.fields :+ StructField(outputCol.name, StringType, false))
+    StructType(schema.fields :+ StructField(outputCol.name, StringType, nullable = false))
   }
   override def transform(dataset: Dataset[_]): DataFrame = {
+
+    val outputSchema = transformSchema(dataset.schema)
+    val metadata = outputSchema($(outputCol)).metadata
+
     val t = udf {
       sentences: String =>
         sentences
@@ -39,12 +43,7 @@ class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner
           )
     }
 
-    dataset
-      .select(
-        col("*"),
-        t(col($(inputCol))).as($(outputCol))
-      )
-      .drop("sentences")
+    dataset.select(col("*"), t(col($(inputCol))).as($(outputCol), metadata))
   }
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
 }

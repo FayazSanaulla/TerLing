@@ -14,7 +14,8 @@ import scala.collection.mutable
   * Created by faiaz on 07.01.17.
   */
 class LinguisticParser(override val uid: String = Identifiable.randomUID("linguisticparser"))
-  extends Transformer with CustomTransformer {
+  extends Transformer
+    with CustomTransformer {
 
   private val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
 
@@ -23,6 +24,10 @@ class LinguisticParser(override val uid: String = Identifiable.randomUID("lingui
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
   override def transform(dataset: Dataset[_]): DataFrame = {
+
+    val outputSchema = transformSchema(dataset.schema)
+    val metadata = outputSchema($(outputCol)).metadata
+
     val t = udf {
       arr: mutable.WrappedArray[String] =>
         arr.map(str =>
@@ -31,9 +36,8 @@ class LinguisticParser(override val uid: String = Identifiable.randomUID("lingui
           .filter(x => x.contains("NN") || x.contains("VB")).mkString(" ")
         )
     }
-    dataset
-      .select(col("*"), t(col($(inputCol))).as($(outputCol)))
-      .drop("cleaned", "filtered")
+
+    dataset.select(col("*"), t(col($(inputCol))).as($(outputCol), metadata))
   }
 
   override def transformSchema(schema: StructType): StructType = {

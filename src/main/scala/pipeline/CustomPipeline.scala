@@ -3,6 +3,7 @@ package pipeline
 import config.SparkConfig
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
+import org.apache.spark.ml.feature.HashingTF
 import org.apache.spark.sql.functions.lit
 import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner, WordsRemover}
 
@@ -12,11 +13,18 @@ import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner, Wor
 object CustomPipeline extends App with SparkConfig {
   import sqlContext.implicits._
 
+  //DATA
   val training = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt")
     .toDF("sentences")
     .withColumn("label", lit(1.0))
     .cache()
 
+  val test = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text.txt")
+    .toDF("sentences")
+    .cache()
+
+  val hash = new HashingTF()
+  //STAGES
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
     .setOutputCol("cleaned")
@@ -31,19 +39,27 @@ object CustomPipeline extends App with SparkConfig {
 
   val dangerousEstimator = new DangerousWordsEstimator()
     .setInputCol(lingParser.getOutputCol)
+    .setOutputCol("features")
 
   val lr = new LogisticRegression()
     .setMaxIter(10)
     .setRegParam(0.001)
+    .setFeaturesCol(dangerousEstimator.getOutputCol)
 
   val pipeline = new Pipeline()
     .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, lr))
 
+  //MODEL
 //  val model = pipeline.fit(training)
+//
+//  model.transform(test)
+//    .select("sentences", "probability", "prediction")
+//    .show()
 
   val tc = textCleaner.transform(training)
   val swr = stopWordsRemover.transform(tc)
   val lp = lingParser.transform(swr)
   val est = dangerousEstimator.transform(lp)
-  est.show()
+  val model = lr.fit(est)
+  model.transform(test).show()
 }

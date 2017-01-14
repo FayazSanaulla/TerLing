@@ -1,6 +1,7 @@
 package transformers
 
 import org.apache.spark.ml.Transformer
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.functions._
@@ -28,75 +29,43 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
+  def setOutputCol(value: String): this.type = set(outputCol, value)
+
   override def transform(dataset: Dataset[_]): DataFrame = {
+
+    val outputSchema = transformSchema(dataset.schema)
+    val metadata = outputSchema($(outputCol)).metadata
+
     val dangerWords = udf {
       arr: mutable.WrappedArray[String] =>
+
+        //Counting of words danger
         val dangerWords = arr.flatMap(_.split(" ")
             .map(_.split("/").head)
             .map(w => words.getOrElse(w, 0.0)))
+
+        //Counting of assotiative pairs danger
+        val dangerPairs = arr
+          .map(_.split(" "))
+          .map(_.partition(_.contains("NN")))
+          .map { case (nouns, verbs) => {
+              val pairs = for {
+                n <- nouns.map(_.split("/").head)
+                v <- verbs.map(_.split("/").head)
+              } yield n -> v
+              val swapped = pairs.map(_.swap)
+
+              pairs ++ swapped
+          }}
+          .flatMap(_.map(w => associationPairs.getOrElse(w, 0.0)))
+
         val wordRes = dangerWords.sum / dangerWords.size
+        val pairsRes = dangerPairs.sum / dangerPairs.size
 
-        val (tmpNouns, tmpVerbs) = arr.flatMap(_.split(" ")).partition(_.contains("NN"))
-        val nouns = tmpNouns.map(_.split("/").head)
-        val verbs = tmpVerbs.map(_.split("/").head)
-
-        val pairs = for {
-          n <- nouns
-          v <- verbs
-        } yield n -> v
-
-        val swappedPairs = pairs.map(_.swap)
-        val resultPairs = pairs ++ swappedPairs
-        val resArr = resultPairs.map(p => associationPairs.getOrElse(p, 0.0))
-        val pairsRes = resArr.sum / resArr.size
-
-        Array(wordRes, pairsRes)
+        Vectors.dense(wordRes, pairsRes)
     }
 
-    dataset.select(col("*"), dangerWords(col($(inputCol)))).drop("parsed")
-//
-//    val wordsDanger = udf {
-//      arr: mutable.WrappedArray[String] =>
-//        val res = arr.map(_.split("/")).map(w => words.getOrElse(w.head, 0.0))
-//
-//        res.sum / res.size
-//    }
-//
-//    val pairsDanger = udf {
-//      arr: mutable.WrappedArray[String] =>
-//        val (nouns, verbs) = arr.partition(pair => pair.contains("NN"))
-//        val pairs = for {
-//          n <- nouns.map(_.split("/").head)
-//          v <- verbs.map(_.split("/").head)
-//        } yield n -> v
-//
-//        val swapped = pairs.map(_.swap)
-//
-//        val resPairs = pairs ++ swapped
-//
-//        val size = resPairs.size
-//        val sum = resPairs.map(w => associationPairs.getOrElse(w, 0.0)).sum
-//
-//        4 * sum / size
-//    }
-//
-////    dataset
-////      .select(
-////        split(concat_ws("/", avg(wordsDanger(col($(inputCol)))), avg(pairsDanger(col($(inputCol))))), "/").as("features"),
-////        col("*")
-////      )
-////    dataset
-////      .select(
-////        avg(wordsDanger(col($(inputCol)))).as("words"),
-////        avg(pairsDanger(col($(inputCol)))).as("pairs")
-////      )
-//    dataset
-//      .select(
-//        col("*"),
-//        wordsDanger(col($(inputCol))),
-//        pairsDanger(col($(inputCol)))
-//      )
-//      .drop("parsed")
+    dataset.select(col("*"), dangerWords(col($(inputCol))).as($(outputCol), metadata))
   }
 
   override def transformSchema(schema: StructType): StructType = {
