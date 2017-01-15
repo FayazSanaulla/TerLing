@@ -3,7 +3,7 @@ package pipeline
 import config.SparkConfig
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
-import org.apache.spark.ml.feature.HashingTF
+import org.apache.spark.ml.feature.VectorAssembler
 import org.apache.spark.sql.functions.lit
 import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner, WordsRemover}
 
@@ -14,16 +14,17 @@ object CustomPipeline extends App with SparkConfig {
   import sqlContext.implicits._
 
   //DATA
-  val training = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt")
+  val training = sc.wholeTextFiles("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt")
+    .map(_._2)
     .toDF("sentences")
     .withColumn("label", lit(1.0))
     .cache()
 
-  val test = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text.txt")
+  val test = sc.wholeTextFiles("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text.txt")
+    .map(_._2)
     .toDF("sentences")
     .cache()
 
-  val hash = new HashingTF()
   //STAGES
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
@@ -39,15 +40,20 @@ object CustomPipeline extends App with SparkConfig {
 
   val dangerousEstimator = new DangerousWordsEstimator()
     .setInputCol(lingParser.getOutputCol)
+    .setOutputCol(Array("word", "pair"))
+
+  val vectorAssembler = new VectorAssembler()
+    .setInputCols(dangerousEstimator.getOutputCol)
     .setOutputCol("features")
 
-  val lr = new LogisticRegression()
+  val logReg = new LogisticRegression()
+    .setLabelCol("label")
+    .setFeaturesCol(vectorAssembler.getOutputCol)
     .setMaxIter(10)
     .setRegParam(0.001)
-    .setFeaturesCol(dangerousEstimator.getOutputCol)
 
   val pipeline = new Pipeline()
-    .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, lr))
+    .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, vectorAssembler, logReg))
 
   //MODEL
 //  val model = pipeline.fit(training)
@@ -55,11 +61,5 @@ object CustomPipeline extends App with SparkConfig {
 //  model.transform(test)
 //    .select("sentences", "probability", "prediction")
 //    .show()
-
-  val tc = textCleaner.transform(training)
-  val swr = stopWordsRemover.transform(tc)
-  val lp = lingParser.transform(swr)
-  val est = dangerousEstimator.transform(lp)
-  val model = lr.fit(est)
-  model.transform(test).show()
+  test.show()
 }

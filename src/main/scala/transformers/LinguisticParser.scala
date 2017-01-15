@@ -15,7 +15,7 @@ import scala.collection.mutable
   */
 class LinguisticParser(override val uid: String = Identifiable.randomUID("linguisticparser"))
   extends Transformer
-    with CustomTransformer {
+    with SingleTransformer {
 
   private val tagger: CRF[AnnotatedLabel, String] = epic.models.PosTagSelector.loadTagger("en").get
 
@@ -24,9 +24,6 @@ class LinguisticParser(override val uid: String = Identifiable.randomUID("lingui
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
   override def transform(dataset: Dataset[_]): DataFrame = {
-
-    val outputSchema = transformSchema(dataset.schema)
-    val metadata = outputSchema($(outputCol)).metadata
 
     val t = udf {
       arr: mutable.WrappedArray[String] =>
@@ -37,7 +34,7 @@ class LinguisticParser(override val uid: String = Identifiable.randomUID("lingui
         )
     }
 
-    dataset.select(col("*"), t(col($(inputCol))).as($(outputCol), metadata))
+    dataset.select(col("*"), t(col($(inputCol))).as($(outputCol)))
   }
 
   override def transformSchema(schema: StructType): StructType = {

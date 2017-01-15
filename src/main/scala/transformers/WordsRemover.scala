@@ -6,6 +6,7 @@ import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
+import utils.Helper
 
 import scala.collection.mutable
 
@@ -14,7 +15,8 @@ import scala.collection.mutable
   */
 class WordsRemover(override val uid: String = Identifiable.randomUID("linguisticparser"))
   extends Transformer
-    with CustomTransformer {
+    with SingleTransformer
+    with Helper{
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
@@ -24,16 +26,13 @@ class WordsRemover(override val uid: String = Identifiable.randomUID("linguistic
 
   override def transform(dataset: Dataset[_]): DataFrame = {
 
-    val outputSchema = transformSchema(dataset.schema)
-    val metadata = outputSchema($(outputCol)).metadata
-
     val t  = udf { arr: mutable.WrappedArray[String] =>
       arr
         .map(_.split(" ").filterNot(w => words.contains(w.toLowerCase)))
         .map(_.mkString(" "))
     }
 
-    dataset.select(col("*"), t(col($(inputCol))).as($(outputCol), metadata))
+    dataset.select(col("*"), t(col($(inputCol))).as($(outputCol)))
   }
 
   override def transformSchema(schema: StructType): StructType = {

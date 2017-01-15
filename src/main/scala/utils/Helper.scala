@@ -5,6 +5,11 @@ import org.apache.spark.sql.DataFrame
 /**
   * Created by faiaz on 13.01.17.
   */
-object Helper {
-  def print(df: DataFrame): Unit = df.collect().foreach(println)
+trait Helper {
+  final def print(df: DataFrame): Unit = df.collect().foreach(println)
+
+  final def loadResources(path: String): Array[String] = {
+    val is = getClass.getResourceAsStream(path)
+    scala.io.Source.fromInputStream(is)(scala.io.Codec.UTF8).getLines().toArray
+  }
 }

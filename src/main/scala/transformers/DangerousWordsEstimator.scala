@@ -1,12 +1,12 @@
 package transformers
 
 import org.apache.spark.ml.Transformer
-import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
+import utils.Helper
 
 import scala.collection.mutable
 
@@ -15,34 +15,44 @@ import scala.collection.mutable
   */
 class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID("dangerEstimator"))
   extends Transformer
-    with CustomTransformer {
+    with MultipleTransformer
+    with Helper {
 
   private val words = loadResources("/dangerous/dangerousWords.txt").map(w => {
     val splitRes = w.split("/")
     (splitRes(0), splitRes(1).toDouble)
   }).toMap
 
-  private val associationPairs = loadResources("/dangerous/dangerousPairs.txt").map(w => {
+  private val pairs = loadResources("/dangerous/dangerousPairs.txt").map(w => {
     val splitRes = w.split("/")
     ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
   }).toMap
 
+  private var out: Array[String] = Array.empty[String]
+
   def setInputCol(value: String): this.type = set(inputCol, value)
 
-  def setOutputCol(value: String): this.type = set(outputCol, value)
+  def setOutputCol(value: Array[String]): this.type = {
+    out = value
+    set(outputCol, value)
+  }
 
   override def transform(dataset: Dataset[_]): DataFrame = {
 
-    val outputSchema = transformSchema(dataset.schema)
-    val metadata = outputSchema($(outputCol)).metadata
-
-    val dangerWords = udf {
+    val w = udf {
       arr: mutable.WrappedArray[String] =>
 
         //Counting of words danger
         val dangerWords = arr.flatMap(_.split(" ")
-            .map(_.split("/").head)
-            .map(w => words.getOrElse(w, 0.0)))
+          .map(_.split("/").head)
+          .map(w => words.getOrElse(w, 0.0)))
+
+        val wordRes = dangerWords.sum / dangerWords.size
+        wordRes
+    }
+
+    val p = udf {
+      arr: mutable.WrappedArray[String] =>
 
         //Counting of assotiative pairs danger
         val dangerPairs = arr
@@ -56,20 +66,27 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
               val swapped = pairs.map(_.swap)
 
               pairs ++ swapped
-          }}
-          .flatMap(_.map(w => associationPairs.getOrElse(w, 0.0)))
+            }
+          }
+          .flatMap(_.map(w => pairs.getOrElse(w, 0.0)))
 
-        val wordRes = dangerWords.sum / dangerWords.size
         val pairsRes = dangerPairs.sum / dangerPairs.size
-
-        Vectors.dense(wordRes, pairsRes)
+        pairsRes
     }
 
-    dataset.select(col("*"), dangerWords(col($(inputCol))).as($(outputCol), metadata))
+    dataset.select(
+      col("*"),
+      w(col($(inputCol))).as(out.head),
+      p(col($(inputCol))).as(out.last)
+    )
   }
 
   override def transformSchema(schema: StructType): StructType = {
-    StructType(schema.fields :+ StructField(outputCol.name, StringType, nullable = false))
+    StructType(
+      schema.fields :+
+        StructField(out.head, DoubleType, nullable = false) :+
+        StructField(out.last, DoubleType, nullable = false)
+    )
   }
 
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}

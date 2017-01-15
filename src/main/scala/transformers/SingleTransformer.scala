@@ -3,9 +3,9 @@ package transformers
 import org.apache.spark.ml.param.{Param, Params}
 
 /**
-  * Created by faiaz on 01.01.17.
+  * Created by faiaz on 15.01.17.
   */
-trait CustomTransformer extends Params {
+trait SingleTransformer extends Params {
 
   final val inputCol: Param[String] = new Param[String](this, "inputCol", "input column name")
 
@@ -16,8 +16,4 @@ trait CustomTransformer extends Params {
 
   final def getOutputCol: String = $(outputCol)
 
-  def loadResources(path: String): Array[String] = {
-    val is = getClass.getResourceAsStream(path)
-    scala.io.Source.fromInputStream(is)(scala.io.Codec.UTF8).getLines().toArray
-  }
 }
