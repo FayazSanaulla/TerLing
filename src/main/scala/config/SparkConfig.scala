@@ -1,6 +1,6 @@
 package config
 
-import org.apache.spark.sql.{SQLContext, SparkSession}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -10,15 +10,14 @@ trait SparkConfig {
 
   val conf: SparkConf = new SparkConf()
     .setMaster("local[*]")
-    .setAppName("bigData")
+    .setAppName("TerLing")
     .set("spark.executor.memory", "1g")
     .set("spark.cores.max", "4")
 
-  val sc = new SparkContext(conf)
-  val sqlContext = new SQLContext(sc)
-
   val spark: SparkSession = SparkSession
     .builder()
+    .config(conf)
     .getOrCreate()
 
+  val sc: SparkContext = spark.sparkContext
 }

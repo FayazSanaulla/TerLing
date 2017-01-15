@@ -9,7 +9,7 @@ import org.apache.spark.sql.functions.lit
   * Created by faiaz on 13.01.17.
   */
 trait SparkHelper extends SparkConfig {
-  import sqlContext.implicits._
+  import spark.implicits._
 
   val loadPath: String
 

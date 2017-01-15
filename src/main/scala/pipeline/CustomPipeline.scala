@@ -12,6 +12,7 @@ import utils.SparkHelper
 object CustomPipeline extends App with SparkHelper {
 
   override val loadPath: String = "/tmp/fitted-model-log-reg"
+
   //DATA
   val training = loadDF("en_text", label = true).cache()
   val test = loadDF("en_text_1").cache()
@@ -49,8 +50,6 @@ object CustomPipeline extends App with SparkHelper {
 
   //MODEL
   val model = pipeline.fit(training)
-
-  saveModel(model)
 
   //PREDICTION
   model.transform(terror)
