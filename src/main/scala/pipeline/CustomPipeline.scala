@@ -1,29 +1,22 @@
 package pipeline
 
-import config.SparkConfig
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
-import org.apache.spark.ml.feature.HashingTF
-import org.apache.spark.sql.functions.lit
-import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner, WordsRemover}
+import org.apache.spark.ml.feature.VectorAssembler
+import transformers.{DangerousWordsTransformer, LinguisticParser, TextCleaner, WordsRemover}
+import utils.SparkHelper
 
 /**
   * Created by faiaz on 31.12.16.
   */
-object CustomPipeline extends App with SparkConfig {
-  import sqlContext.implicits._
+object CustomPipeline extends App with SparkHelper {
 
+  override val loadPath: String = "/tmp/fitted-model-log-reg"
   //DATA
-  val training = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt")
-    .toDF("sentences")
-    .withColumn("label", lit(1.0))
-    .cache()
+  val training = loadDF("en_text", label = true).cache()
+  val test = loadDF("en_text_1").cache()
+  val terror = loadDF("terror").cache()
 
-  val test = sc.textFile("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text.txt")
-    .toDF("sentences")
-    .cache()
-
-  val hash = new HashingTF()
   //STAGES
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
@@ -37,29 +30,30 @@ object CustomPipeline extends App with SparkConfig {
     .setInputCol(stopWordsRemover.getOutputCol)
     .setOutputCol("parsed")
 
-  val dangerousEstimator = new DangerousWordsEstimator()
+  val dangerousEstimator = new DangerousWordsTransformer()
     .setInputCol(lingParser.getOutputCol)
+    .setOutputCols(Array("word", "pair"))
+
+  val vectorAssembler = new VectorAssembler()
+    .setInputCols(dangerousEstimator.getOutputCols)
     .setOutputCol("features")
 
-  val lr = new LogisticRegression()
+  val logReg = new LogisticRegression()
+    .setLabelCol("label")
+    .setFeaturesCol(vectorAssembler.getOutputCol)
     .setMaxIter(10)
     .setRegParam(0.001)
-    .setFeaturesCol(dangerousEstimator.getOutputCol)
 
   val pipeline = new Pipeline()
-    .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, lr))
+    .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, vectorAssembler, logReg))
 
   //MODEL
-//  val model = pipeline.fit(training)
-//
-//  model.transform(test)
-//    .select("sentences", "probability", "prediction")
-//    .show()
+  val model = pipeline.fit(training)
 
-  val tc = textCleaner.transform(training)
-  val swr = stopWordsRemover.transform(tc)
-  val lp = lingParser.transform(swr)
-  val est = dangerousEstimator.transform(lp)
-  val model = lr.fit(est)
-  model.transform(test).show()
+  saveModel(model)
+
+  //PREDICTION
+  model.transform(terror)
+    .select("sentences", "probability", "prediction")
+    .show()
 }
