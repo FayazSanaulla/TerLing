@@ -6,7 +6,7 @@ import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
-import utils.Helper
+import utils.ResourceLoader
 
 import scala.collection.mutable
 
@@ -16,7 +16,7 @@ import scala.collection.mutable
 class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID("dangerEstimator"))
   extends Transformer
     with MultipleTransformer
-    with Helper {
+    with ResourceLoader {
 
   private val words = loadResources("/dangerous/dangerousWords.txt").map(w => {
     val splitRes = w.split("/")
@@ -88,6 +88,5 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
         StructField(out.last, DoubleType, nullable = false)
     )
   }
-
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
 }

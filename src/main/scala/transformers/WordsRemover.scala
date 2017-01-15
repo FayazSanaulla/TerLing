@@ -6,7 +6,7 @@ import org.apache.spark.ml.util.Identifiable
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
-import utils.Helper
+import utils.ResourceLoader
 
 import scala.collection.mutable
 
@@ -16,7 +16,7 @@ import scala.collection.mutable
 class WordsRemover(override val uid: String = Identifiable.randomUID("linguisticparser"))
   extends Transformer
     with SingleTransformer
-    with Helper{
+    with ResourceLoader {
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 

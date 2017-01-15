@@ -1,29 +1,20 @@
 package pipeline
 
-import config.SparkConfig
 import org.apache.spark.ml.Pipeline
 import org.apache.spark.ml.classification.LogisticRegression
 import org.apache.spark.ml.feature.VectorAssembler
-import org.apache.spark.sql.functions.lit
 import transformers.{DangerousWordsEstimator, LinguisticParser, TextCleaner, WordsRemover}
+import utils.SparkHelper
 
 /**
   * Created by faiaz on 31.12.16.
   */
-object CustomPipeline extends App with SparkConfig {
-  import sqlContext.implicits._
+object CustomPipeline extends App with SparkHelper {
 
   //DATA
-  val training = sc.wholeTextFiles("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text_1.txt")
-    .map(_._2)
-    .toDF("sentences")
-    .withColumn("label", lit(1.0))
-    .cache()
-
-  val test = sc.wholeTextFiles("file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/en_text.txt")
-    .map(_._2)
-    .toDF("sentences")
-    .cache()
+  val training = loadDF("en_text", label = true).cache()
+  val test = loadDF("en_text_1").cache()
+  val terror = loadDF("terror").cache()
 
   //STAGES
   val textCleaner = new TextCleaner()
@@ -56,10 +47,9 @@ object CustomPipeline extends App with SparkConfig {
     .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, vectorAssembler, logReg))
 
   //MODEL
-//  val model = pipeline.fit(training)
-//
-//  model.transform(test)
-//    .select("sentences", "probability", "prediction")
-//    .show()
-  test.show()
+  val model = pipeline.fit(training)
+
+  model.transform(terror)
+    .select("sentences", "probability", "prediction")
+    .show()
 }
