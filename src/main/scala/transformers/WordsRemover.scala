@@ -2,7 +2,7 @@ package transformers
 
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
@@ -16,7 +16,8 @@ import scala.collection.mutable
 class WordsRemover(override val uid: String = Identifiable.randomUID("linguisticparser"))
   extends Transformer
     with SingleTransformer
-    with ResourceLoader {
+    with ResourceLoader
+    with DefaultParamsWritable {
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 

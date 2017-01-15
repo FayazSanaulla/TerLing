@@ -2,7 +2,7 @@ package transformers
 
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
@@ -13,10 +13,11 @@ import scala.collection.mutable
 /**
   * Created by faiaz on 08.01.17.
   */
-class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID("dangerEstimator"))
+class DangerousWordsTransformer(override val uid: String = Identifiable.randomUID("dangerEstimator"))
   extends Transformer
     with MultipleTransformer
-    with ResourceLoader {
+    with ResourceLoader
+    with DefaultParamsWritable {
 
   private val words = loadResources("/dangerous/dangerousWords.txt").map(w => {
     val splitRes = w.split("/")
@@ -28,14 +29,11 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
     ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
   }).toMap
 
-  private var out: Array[String] = Array.empty[String]
+  private val out: Array[String] = getOutputCols
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
-  def setOutputCol(value: Array[String]): this.type = {
-    out = value
-    set(outputCol, value)
-  }
+  def setOutputCols(value: Array[String]): this.type = set(outputCols, value)
 
   override def transform(dataset: Dataset[_]): DataFrame = {
 
@@ -54,19 +52,19 @@ class DangerousWordsEstimator(override val uid: String = Identifiable.randomUID(
     val p = udf {
       arr: mutable.WrappedArray[String] =>
 
-        //Counting of assotiative pairs danger
+        //Counting of associative pairs danger
         val dangerPairs = arr
           .map(_.split(" "))
           .map(_.partition(_.contains("NN")))
-          .map { case (nouns, verbs) => {
+          .map {
+            case (nouns, verbs) =>
               val pairs = for {
                 n <- nouns.map(_.split("/").head)
                 v <- verbs.map(_.split("/").head)
               } yield n -> v
               val swapped = pairs.map(_.swap)
 
-              pairs ++ swapped
-            }
+            pairs ++ swapped
           }
           .flatMap(_.map(w => pairs.getOrElse(w, 0.0)))
 

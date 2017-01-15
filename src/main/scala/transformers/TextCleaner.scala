@@ -3,7 +3,7 @@ package transformers
 import epic.preprocess.MLSentenceSegmenter
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.util.Identifiable
+import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
@@ -13,7 +13,8 @@ import org.apache.spark.sql.{DataFrame, Dataset}
   */
 class TextCleaner(override val uid: String = Identifiable.randomUID("textcleaner"))
   extends Transformer
-    with SingleTransformer {
+    with SingleTransformer
+    with DefaultParamsWritable {
 
   private implicit val segmenter: MLSentenceSegmenter = MLSentenceSegmenter.bundled().get
 
