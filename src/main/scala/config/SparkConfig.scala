@@ -11,8 +11,9 @@ trait SparkConfig {
   val conf: SparkConf = new SparkConf()
     .setMaster("local[*]")
     .setAppName("TerLing")
-    .set("spark.executor.memory", "1g")
-    .set("spark.cores.max", "4")
+    .set("spark.executor.memory", "8g")
+    .set("spark.driver.memory", "8g")
+//    .set("spark.cores.max", "4")
 
   val spark: SparkSession = SparkSession
     .builder()

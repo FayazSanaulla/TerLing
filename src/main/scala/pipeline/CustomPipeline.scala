@@ -14,9 +14,11 @@ object CustomPipeline extends App with SparkHelper {
   override val loadPath: String = "/tmp/fitted-model-log-reg"
 
   //DATA
-  val training = loadDF("en_text", label = true).cache()
-  val test = loadDF("en_text_1").cache()
-  val terror = loadDF("terror").cache()
+  val positive = loadSeqDF("pos", 1.0)
+  val negative = loadSeqDF("neg", 0.0)
+  val training = positive.union(negative)
+
+  val test = loadDF("test.txt")
 
   //STAGES
   val textCleaner = new TextCleaner()
@@ -52,7 +54,8 @@ object CustomPipeline extends App with SparkHelper {
   val model = pipeline.fit(training)
 
   //PREDICTION
-  model.transform(terror)
-    .select("sentences", "probability", "prediction")
-    .show()
+  val prediction = model.transform(test)
+    .select("sentences", "features", "probability", "prediction")
+
+  print(prediction)
 }

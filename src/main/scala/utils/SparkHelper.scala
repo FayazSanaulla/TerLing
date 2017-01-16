@@ -15,11 +15,16 @@ trait SparkHelper extends SparkConfig {
 
   final def print(df: DataFrame): Unit = df.collect().foreach(println)
 
-  final def loadDF(name: String, label: Boolean = false): DataFrame = {
-    val df = sc.wholeTextFiles(s"file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/$name.txt")
+  final def loadSeqDF(name: String, label: Double): DataFrame = {
+    sc.wholeTextFiles(s"file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/$name")
       .map(_._2)
       .toDF("sentences")
-    if (label) df.withColumn("label", lit(1.0)) else df
+      .withColumn("label", lit(label))
+  }
+
+  final def loadDF(name: String): DataFrame = {
+    sc.textFile(s"file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/test/$name")
+      .toDF("sentences")
   }
 
   final def saveModel(model: PipelineModel): Unit = {
