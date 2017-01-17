@@ -13,7 +13,7 @@ import scala.collection.mutable
 /**
   * Created by faiaz on 13.01.17.
   */
-class WordsRemover(override val uid: String = Identifiable.randomUID("linguisticparser"))
+class WordsRemover(override val uid: String = Identifiable.randomUID("wordRemover"))
   extends Transformer
     with SingleTransformer
     with ResourceLoader
@@ -26,13 +26,11 @@ class WordsRemover(override val uid: String = Identifiable.randomUID("linguistic
   private val words = loadResources("/stopWords/english.txt")
 
   override def transform(dataset: Dataset[_]): DataFrame = {
-
     val t  = udf { arr: mutable.WrappedArray[String] =>
       arr
-        .map(_.split(" ").filterNot(w => words.contains(w.toLowerCase)))
+        .map(_.split(' ').filterNot(w => words.contains(w.toLowerCase)))
         .map(_.mkString(" "))
     }
-
     dataset.select(col("*"), t(col($(inputCol))).as($(outputCol)))
   }
 

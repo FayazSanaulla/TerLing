@@ -22,12 +22,12 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
   private val words = loadResources("/dangerous/dangerousWords.txt").map(w => {
     val splitRes = w.split("/")
     (splitRes(0), splitRes(1).toDouble)
-  }).toMap
+  })
 
   private val pairs = loadResources("/dangerous/dangerousPairs.txt").map(w => {
     val splitRes = w.split("/")
     ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
-  }).toMap
+  })
 
   private val out: Array[String] = getOutputCols
 
@@ -39,14 +39,12 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
 
     val w = udf {
       arr: mutable.WrappedArray[String] =>
-
         //Counting of words danger
-        val dangerWords = arr.flatMap(_.split(" ")
-          .map(_.split("/").head)
-          .map(w => words.getOrElse(w, 0.0)))
+        val dangerWords = arr.flatMap(_.split(' ')
+          .map(_.split('/').head)
+          .map(w => words.find(_._1 == w).map(_._2).getOrElse(0.0)))
 
-        val wordRes = dangerWords.sum / dangerWords.size
-        wordRes
+        dangerWords.sum / dangerWords.size
     }
 
     val p = udf {
@@ -54,22 +52,21 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
 
         //Counting of associative pairs danger
         val dangerPairs = arr
-          .map(_.split(" "))
+          .map(_.split('/'))
           .map(_.partition(_.contains("NN")))
           .map {
             case (nouns, verbs) =>
               val pairs = for {
-                n <- nouns.map(_.split("/").head)
-                v <- verbs.map(_.split("/").head)
+                n <- nouns.map(_.split('/').head)
+                v <- verbs.map(_.split('/').head)
               } yield n -> v
               val swapped = pairs.map(_.swap)
 
             pairs ++ swapped
           }
-          .flatMap(_.map(w => pairs.getOrElse(w, 0.0)))
+          .flatMap(_.map(w => pairs.find(_._1 == w).map(_._2).getOrElse(0.0)))
 
-        val pairsRes = dangerPairs.sum / dangerPairs.size
-        pairsRes
+        dangerPairs.sum / dangerPairs.size
     }
 
     dataset.select(
