@@ -2,7 +2,7 @@ package transformers
 
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
+import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
@@ -16,8 +16,7 @@ import scala.collection.mutable
 class DangerousWordsTransformer(override val uid: String = Identifiable.randomUID("dangerEstimator"))
   extends Transformer
     with MultipleTransformer
-    with ResourceLoader
-    with DefaultParamsWritable {
+    with ResourceLoader {
 
   private val words = loadResources("/dangerous/dangerousWords.txt").map(w => {
     val splitRes = w.split("/")
@@ -30,6 +29,8 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
   })
 
   private val out: Array[String] = getOutputCols
+
+  private def check(value: Double): Double = if (value.isNaN) 0.0 else value
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
@@ -44,12 +45,11 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
           .map(_.split('/').head)
           .map(w => words.find(_._1 == w).map(_._2).getOrElse(0.0)))
 
-        dangerWords.sum / dangerWords.size
+        check(dangerWords.sum / dangerWords.size)
     }
 
     val p = udf {
       arr: mutable.WrappedArray[String] =>
-
         //Counting of associative pairs danger
         val dangerPairs = arr
           .map(_.split('/'))
@@ -66,7 +66,7 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
           }
           .flatMap(_.map(w => pairs.find(_._1 == w).map(_._2).getOrElse(0.0)))
 
-        dangerPairs.sum / dangerPairs.size
+        check(dangerPairs.sum / dangerPairs.size)
     }
 
     dataset.select(
@@ -84,4 +84,8 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
     )
   }
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
+}
+
+object DangerousWordsTransformer extends DefaultParamsReadable[DangerousWordsTransformer] {
+  override def load(path: String): DangerousWordsTransformer = super.load(path)
 }

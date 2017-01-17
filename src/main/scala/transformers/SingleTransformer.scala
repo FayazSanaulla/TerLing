@@ -1,11 +1,11 @@
 package transformers
 
-import org.apache.spark.ml.param.{Param, Params}
+import org.apache.spark.ml.param.Param
 
 /**
   * Created by faiaz on 15.01.17.
   */
-trait SingleTransformer extends Params {
+trait SingleTransformer extends CustomTransformer {
 
   final val inputCol: Param[String] = new Param[String](this, "inputCol", "input column name")
 

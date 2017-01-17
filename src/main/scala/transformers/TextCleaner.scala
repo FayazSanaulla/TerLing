@@ -3,7 +3,7 @@ package transformers
 import epic.preprocess.MLSentenceSegmenter
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
+import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
@@ -13,8 +13,7 @@ import org.apache.spark.sql.{DataFrame, Dataset}
   */
 class TextCleaner(override val uid: String = Identifiable.randomUID("textCleaner"))
   extends Transformer
-    with SingleTransformer
-    with DefaultParamsWritable {
+    with SingleTransformer {
 
   private implicit val segmenter: MLSentenceSegmenter = MLSentenceSegmenter.bundled().get
 
@@ -43,4 +42,8 @@ class TextCleaner(override val uid: String = Identifiable.randomUID("textCleaner
     dataset.select(col("*"), t(col($(inputCol))).as($(outputCol)))
   }
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
+}
+
+object TextCleaner extends DefaultParamsReadable[TextCleaner] {
+  override def load(path: String): TextCleaner = super.load(path)
 }

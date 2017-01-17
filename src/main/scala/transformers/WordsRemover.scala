@@ -2,7 +2,7 @@ package transformers
 
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
+import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
@@ -16,8 +16,7 @@ import scala.collection.mutable
 class WordsRemover(override val uid: String = Identifiable.randomUID("wordRemover"))
   extends Transformer
     with SingleTransformer
-    with ResourceLoader
-    with DefaultParamsWritable {
+    with ResourceLoader {
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
@@ -39,4 +38,8 @@ class WordsRemover(override val uid: String = Identifiable.randomUID("wordRemove
   }
 
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
+}
+
+object WordsRemover extends DefaultParamsReadable[WordsRemover] {
+  override def load(path: String): WordsRemover = super.load(path)
 }
