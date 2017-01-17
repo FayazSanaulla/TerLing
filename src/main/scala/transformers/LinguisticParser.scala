@@ -27,8 +27,8 @@ class LinguisticParser(override val uid: String = Identifiable.randomUID("lingui
     val t = udf {
       arr: mutable.WrappedArray[String] =>
         arr.map(str =>
-          tagger.bestSequence(str.split('/'))
-          .render.split('/')
+          tagger.bestSequence(str.split(' '))
+          .render.split(' ')
           .filter(x => x.contains("NN") || x.contains("VB"))
           .mkString(" ")
         )

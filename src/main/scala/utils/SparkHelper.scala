@@ -16,14 +16,14 @@ trait SparkHelper extends SparkConfig {
   final def print(df: DataFrame): Unit = df.collect().foreach(println)
 
   final def loadSeqDF(name: String, label: Double): DataFrame = {
-    sc.wholeTextFiles(s"file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/$name")
+    sc.wholeTextFiles(s"file:///home/faiaz/IdeaProjects/spark/src/main/resources/data$name")
       .map(_._2)
       .toDF("sentences")
       .withColumn("label", lit(label))
   }
 
-  final def loadDF(name: String): DataFrame = {
-    sc.textFile(s"file:///home/faiaz/IdeaProjects/spark/src/main/resources/data/test/$name")
+  final def loadDF(path: String): DataFrame = {
+    sc.textFile(s"file:///home/faiaz/IdeaProjects/spark/src/main/resources/data$path")
       .toDF("sentences")
   }
 

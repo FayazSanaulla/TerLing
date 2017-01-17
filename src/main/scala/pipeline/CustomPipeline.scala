@@ -14,23 +14,23 @@ object CustomPipeline extends App with SparkHelper {
   override val loadPath: String = "/tmp/fitted-model-log-reg"
 
   //DATA
-  val positive = loadSeqDF("pos", 1.0)
-  val negative = loadSeqDF("neg", 0.0)
+  val positive = loadSeqDF("/pos", 1.0)
+  val negative = loadSeqDF("/neg", 0.0)
   val training = positive.union(negative)
 
-  val test = loadDF("test.txt")
+  val test = loadDF("/test/test.txt")
 
   //STAGES
   val textCleaner = new TextCleaner()
     .setInputCol("sentences")
     .setOutputCol("cleaned")
 
-  val stopWordsRemover = new WordsRemover()
+  val wordsRemover = new WordsRemover()
     .setInputCol(textCleaner.getOutputCol)
     .setOutputCol("filtered")
 
   val lingParser = new LinguisticParser()
-    .setInputCol(stopWordsRemover.getOutputCol)
+    .setInputCol(wordsRemover.getOutputCol)
     .setOutputCol("parsed")
 
   val dangerousEstimator = new DangerousWordsTransformer()
@@ -48,7 +48,7 @@ object CustomPipeline extends App with SparkHelper {
     .setRegParam(0.001)
 
   val pipeline = new Pipeline()
-    .setStages(Array(textCleaner, stopWordsRemover, lingParser, dangerousEstimator, vectorAssembler, logReg))
+    .setStages(Array(textCleaner, wordsRemover, lingParser, dangerousEstimator, vectorAssembler, logReg))
 
   //MODEL
   val model = pipeline.fit(training)
@@ -58,4 +58,9 @@ object CustomPipeline extends App with SparkHelper {
     .select("sentences", "features", "probability", "prediction")
 
   print(prediction)
+
+//  val tc = textCleaner.transform(test)
+//  val wr = wordsRemover.transform(tc)
+//  val lp = lingParser.transform(wr)
+//  lp.show()
 }

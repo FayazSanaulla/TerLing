@@ -30,43 +30,44 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
 
   private val out: Array[String] = getOutputCols
 
-  private def check(value: Double): Double = if (value.isNaN) 0.0 else value
-
   def setInputCol(value: String): this.type = set(inputCol, value)
 
   def setOutputCols(value: Array[String]): this.type = set(outputCols, value)
 
   override def transform(dataset: Dataset[_]): DataFrame = {
 
+    //Counting of words danger
     val w = udf {
       arr: mutable.WrappedArray[String] =>
-        //Counting of words danger
         val dangerWords = arr.flatMap(_.split(' ')
           .map(_.split('/').head)
           .map(w => words.find(_._1 == w).map(_._2).getOrElse(0.0)))
 
-        check(dangerWords.sum / dangerWords.size)
+        dangerWords.sum / dangerWords.size
     }
 
+    //Counting of associative pairs danger
     val p = udf {
       arr: mutable.WrappedArray[String] =>
-        //Counting of associative pairs danger
-        val dangerPairs = arr
-          .map(_.split('/'))
-          .map(_.partition(_.contains("NN")))
-          .map {
-            case (nouns, verbs) =>
-              val pairs = for {
-                n <- nouns.map(_.split('/').head)
-                v <- verbs.map(_.split('/').head)
-              } yield n -> v
-              val swapped = pairs.map(_.swap)
+        if (arr.size < 2) 0.0
+        else {
+          val dangerPairs = arr
+            .map(_.split('/'))
+            .map(_.partition(_.contains("NN")))
+            .map {
+              case (nouns, verbs) =>
+                val pairs = for {
+                  n <- nouns.map(_.split('/').head)
+                  v <- verbs.map(_.split('/').head)
+                } yield n -> v
+                val swapped = pairs.map(_.swap)
 
-            pairs ++ swapped
-          }
-          .flatMap(_.map(w => pairs.find(_._1 == w).map(_._2).getOrElse(0.0)))
+                pairs ++ swapped
+            }
+            .flatMap(_.map(w => pairs.find(_._1 == w).map(_._2).getOrElse(0.0)))
 
-        check(dangerPairs.sum / dangerPairs.size)
+          dangerPairs.sum / dangerPairs.size
+        }
     }
 
     dataset.select(
