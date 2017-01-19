@@ -15,14 +15,12 @@ import scala.collection.mutable
   */
 class WordsRemover(override val uid: String = Identifiable.randomUID("wordRemover"))
   extends Transformer
-    with SingleTransformer
-    with ResourceLoader {
+    with SingleTransformer {
+  import WordsRemover._
 
   def setInputCol(value: String): this.type = set(inputCol, value)
 
   def setOutputCol(value: String): this.type = set(outputCol, value)
-
-  private val words = loadResources("/stopWords/english.txt")
 
   override def transform(dataset: Dataset[_]): DataFrame = {
     val t  = udf { arr: mutable.WrappedArray[String] =>
@@ -40,6 +38,11 @@ class WordsRemover(override val uid: String = Identifiable.randomUID("wordRemove
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
 }
 
-object WordsRemover extends DefaultParamsReadable[WordsRemover] {
+object WordsRemover
+  extends DefaultParamsReadable[WordsRemover]
+    with ResourceLoader {
+
+  val words: Array[String] = loadResources("/stopWords/english.txt")
+
   override def load(path: String): WordsRemover = super.load(path)
 }

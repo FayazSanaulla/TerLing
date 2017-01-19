@@ -15,18 +15,8 @@ import scala.collection.mutable
   */
 class DangerousWordsTransformer(override val uid: String = Identifiable.randomUID("dangerEstimator"))
   extends Transformer
-    with MultipleTransformer
-    with ResourceLoader {
-
-  private val words = loadResources("/dangerous/dangerousWords.txt").map(w => {
-    val splitRes = w.split("/")
-    (splitRes(0), splitRes(1).toDouble)
-  })
-
-  private val pairs = loadResources("/dangerous/dangerousPairs.txt").map(w => {
-    val splitRes = w.split("/")
-    ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
-  })
+    with MultipleTransformer {
+  import DangerousWordsTransformer._
 
   private val out: Array[String] = getOutputCols
 
@@ -87,6 +77,18 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
   override def copy(extra: ParamMap): TextCleaner = {defaultCopy(extra)}
 }
 
-object DangerousWordsTransformer extends DefaultParamsReadable[DangerousWordsTransformer] {
+object DangerousWordsTransformer
+  extends DefaultParamsReadable[DangerousWordsTransformer]
+    with ResourceLoader{
+
+  val words: Array[(String, Double)] = loadResources("/dangerous/dangerousWords.txt").map(w => {
+    val splitRes = w.split("/")
+    (splitRes(0), splitRes(1).toDouble)
+  })
+
+  val pairs: Array[((String, String), Double)] = loadResources("/dangerous/dangerousPairs.txt").map(w => {
+    val splitRes = w.split("/")
+    ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
+  })
   override def load(path: String): DangerousWordsTransformer = super.load(path)
 }

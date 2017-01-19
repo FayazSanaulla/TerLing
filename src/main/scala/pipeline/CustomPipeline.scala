@@ -58,9 +58,4 @@ object CustomPipeline extends App with SparkHelper {
     .select("sentences", "features", "probability", "prediction")
 
   print(prediction)
-
-//  val tc = textCleaner.transform(test)
-//  val wr = wordsRemover.transform(tc)
-//  val lp = lingParser.transform(wr)
-//  lp.show()
 }
