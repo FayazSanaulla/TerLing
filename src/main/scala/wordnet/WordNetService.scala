@@ -19,6 +19,6 @@ class WordNetService {
   def synonyms(lemma: String, pos: POS): Seq[String] = {
     val word = dict.getIndexWord(pos, lemma)
     if (word == null) Nil
-    else word.getSenses.toList.map(_.getWords).flatMap(_.map(_.getLemma))
+    else word.getSenses.toList.map(_.getWords).flatMap(_.map(_.getLemma)).distinct
   }
 }

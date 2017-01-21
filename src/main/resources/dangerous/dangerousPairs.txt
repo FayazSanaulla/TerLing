@@ -1,3 +1,4 @@
 airport/bomb/0.9
 planting/bomb/1.0
 throw/bomb/1.0
+bomb/throw/0.9

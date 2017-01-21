@@ -50,12 +50,17 @@ object CustomPipeline extends App with SparkHelper {
   val pipeline = new Pipeline()
     .setStages(Array(textCleaner, wordsRemover, lingParser, dangerousEstimator, vectorAssembler, logReg))
 
-  //MODEL
-  val model = pipeline.fit(training)
-
-  //PREDICTION
-  val prediction = model.transform(test)
-    .select("sentences", "features", "probability", "prediction")
-
-  print(prediction)
+//  //MODEL
+//  val model = pipeline.fit(training)
+//
+//  //PREDICTION
+//  val prediction = model.transform(test)
+//    .select("sentences", "features", "probability", "prediction")
+//
+//  print(prediction)
+  val tc = textCleaner.transform(test)
+  val wr = wordsRemover.transform(tc)
+  val lp = lingParser.transform(wr)
+  val da = dangerousEstimator.transform(lp)
+  da.show()
 }
