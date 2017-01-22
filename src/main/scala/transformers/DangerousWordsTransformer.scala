@@ -34,9 +34,9 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
       arr: mutable.WrappedArray[String] =>
         val (nouns, verbs) = arr.flatMap(_.split(' ')).partition(_.contains("NN"))
         val nounsEst = nouns.map(_.split('/').head)
-          .map(w => nounsSets.find(_._1.contains(w)).map(_._2).getOrElse(0.0))
+          .map(w => nounsArr.find(_._1.contains(w)).map(_._2).getOrElse(0.0))
         val verbsEst = verbs.map(_.split('/').head)
-          .map(w => verbsSets.find(_._1.contains(w)).map(_._2).getOrElse(0.0))
+          .map(w => verbsArr.find(_._1.contains(w)).map(_._2).getOrElse(0.0))
         val resArr = nounsEst ++ verbsEst
 
         resArr.sum / resArr.size
@@ -46,39 +46,21 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
     //Counting of associative pairs danger
     val p = udf {
       arr: mutable.WrappedArray[String] =>
-        if (arr.size < 2) 0.0
-        else {
-//          val dangerPairs = arr.map(_.split('/'))
-//            .map(_.partition(_.contains("NN")))
-//            .map {
-//              case (n, v) =>
-//                val pairs = for {
-//                  n <- n.map(_.split('/').head)
-//                  v <- v.map(_.split('/').head)
-//                } yield n -> v
-//                val swapped = pairs.map(_.swap)
-//
-//                pairs ++ swapped
-//            }
-//            .flatMap(_.map(w => pairs.find(_._1 == w).map(_._2).getOrElse(0.0)))
-//
-//          dangerPairs.sum / dangerPairs.size
-          val dangerPairs = arr.map(_.split('/'))
-            .map(_.partition(_.contains("NN")))
-            .map { case(n, v) =>
-                val nouns = n.map(_.split('/').head)
-                val verbs = v.map(_.split('/').head)
-                val pairs = for {
-                  n <- nouns
-                  v <- verbs
-                } yield n -> v
-                val swappedPairs = pairs.map(_.swap)
-                pairs ++ swappedPairs
+          val splits = arr.map(_.split(' '))
+          val arrPairs = splits.map(_.partition(_.contains("NN")))
+          val values = arrPairs.flatMap {
+            case (n, v) =>
+              val nouns = n.map(_.split('/').head)
+              val verbs = v.map(_.split('/').head)
+              val pairs = for {
+                n <- nouns
+                v <- verbs
+              } yield (n, v)
+              val swappedPairs = pairs.map(_.swap)
+              pairs ++ swappedPairs
           }
-            .map(p => pairsSets.find(_._1 == p).map(_._2).getOrElse(0.0))
-
-          dangerPairs.sum / dangerPairs.size
-        }
+          val arrOfDouble = values.map(p => pairsArr.find(_._1 == p).map(_._2).getOrElse(0.0))
+        arrOfDouble.sum / arrOfDouble.size
     }
 
     dataset.select(
@@ -104,18 +86,18 @@ object DangerousWordsTransformer
 
   val wns = new WordNetService
 
-  val nounsSets: Array[(Seq[String], Double)] = loadResources("/dangerous/dangerousNouns.txt").map(w => {
+  val nounsArr: Array[(Seq[String], Double)] = loadResources("/dangerous/dangerousNouns.txt").map(w => {
     val splitRes = w.split("/")
     (splitRes(0), splitRes(1).toDouble)
   }).map { case(word, estimate) => wns.synonyms(word, POS.NOUN) -> estimate }
 
-  val verbsSets: Array[(Seq[String], Double)] = loadResources("/dangerous/dangerousVerbs.txt")
+  val verbsArr: Array[(Seq[String], Double)] = loadResources("/dangerous/dangerousVerbs.txt")
     .map(w => {
     val splitRes = w.split('/')
     (splitRes(0), splitRes(1).toDouble)
   }).map { case(word, estimator) => wns.synonyms(word, POS.VERB) -> estimator}
 
-  val pairsSets: Array[((String, String), Double)] = loadResources("/dangerous/dangerousPairs.txt").map(w => {
+  val pairsArr: Array[((String, String), Double)] = loadResources("/dangerous/dangerousPairs.txt").map(w => {
     val splitRes = w.split("/")
     ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
   })
