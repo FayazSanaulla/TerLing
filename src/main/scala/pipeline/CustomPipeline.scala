@@ -56,6 +56,7 @@ object CustomPipeline extends App with SparkHelper {
   val model = pipeline.fit(training)
 
   //PREDICTION
-  val prediction = model.transform(test1)
-    .select("sentences", "features", "probability", "prediction")
+  val prediction = model.transform(test)
+    .select("sentences", "probability", "prediction")
+    .show()
 }
