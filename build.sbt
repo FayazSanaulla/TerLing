@@ -9,5 +9,5 @@ libraryDependencies ++= Seq(
   "org.scalanlp" % "epic_2.11" % "0.4-4f38c5718c8fb78d928b57c9fae3649fb0e2f08f",
   "org.scalanlp" % "epic-pos-en_2.11" % "2016.8.29",
   "org.scalanlp" % "epic-parser-en-span_2.11" % "2016.8.29",
-  "net.sf.extjwnl" % "extjwnl" % "1.6.4"
+  "net.sf.jwordnet" % "jwnl"% "1.4_rc3"
 )

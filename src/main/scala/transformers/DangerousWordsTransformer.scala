@@ -1,5 +1,6 @@
 package transformers
 
+import net.didion.jwnl.data.POS
 import org.apache.spark.ml.Transformer
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
@@ -7,7 +8,9 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Dataset}
 import utils.ResourceLoader
+import wordnet.WordNetService
 
+import scala.collection.immutable.Seq
 import scala.collection.mutable
 
 /**
@@ -29,35 +32,35 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
     //Counting of words danger
     val w = udf {
       arr: mutable.WrappedArray[String] =>
-        val dangerWords = arr.flatMap(_.split(' ')
-          .map(_.split('/').head)
-          .map(w => words.find(_._1 == w).map(_._2).getOrElse(0.0)))
+        val (nouns, verbs) = arr.flatMap(_.split(' ')).partition(_.contains("NN"))
+        val nounsEst = nouns.map(_.split('/').head)
+          .map(w => nounsArr.find(_._1.contains(w)).map(_._2).getOrElse(0.0))
+        val verbsEst = verbs.map(_.split('/').head)
+          .map(w => verbsArr.find(_._1.contains(w)).map(_._2).getOrElse(0.0))
+        val resArr = nounsEst ++ verbsEst
 
-        dangerWords.sum / dangerWords.size
+        resArr.sum / resArr.size
+
     }
 
     //Counting of associative pairs danger
     val p = udf {
       arr: mutable.WrappedArray[String] =>
-        if (arr.size < 2) 0.0
-        else {
-          val dangerPairs = arr
-            .map(_.split('/'))
-            .map(_.partition(_.contains("NN")))
-            .map {
-              case (nouns, verbs) =>
-                val pairs = for {
-                  n <- nouns.map(_.split('/').head)
-                  v <- verbs.map(_.split('/').head)
-                } yield n -> v
-                val swapped = pairs.map(_.swap)
-
-                pairs ++ swapped
-            }
-            .flatMap(_.map(w => pairs.find(_._1 == w).map(_._2).getOrElse(0.0)))
-
-          dangerPairs.sum / dangerPairs.size
-        }
+          val splits = arr.map(_.split(' '))
+          val arrPairs = splits.map(_.partition(_.contains("NN")))
+          val values = arrPairs.flatMap {
+            case (n, v) =>
+              val nouns = n.map(_.split('/').head)
+              val verbs = v.map(_.split('/').head)
+              val pairs = for {
+                n <- nouns
+                v <- verbs
+              } yield (n, v)
+              val swappedPairs = pairs.map(_.swap)
+              pairs ++ swappedPairs
+          }
+          val arrOfDouble = values.map(p => pairsArr.find(_._1 == p).map(_._2).getOrElse(0.0))
+        arrOfDouble.sum / arrOfDouble.size
     }
 
     dataset.select(
@@ -79,16 +82,25 @@ class DangerousWordsTransformer(override val uid: String = Identifiable.randomUI
 
 object DangerousWordsTransformer
   extends DefaultParamsReadable[DangerousWordsTransformer]
-    with ResourceLoader{
+    with ResourceLoader {
 
-  val words: Array[(String, Double)] = loadResources("/dangerous/dangerousWords.txt").map(w => {
+  val wns = new WordNetService
+
+  val nounsArr: Array[(Seq[String], Double)] = loadResources("/dangerous/dangerousNouns.txt").map(w => {
     val splitRes = w.split("/")
     (splitRes(0), splitRes(1).toDouble)
-  })
+  }).map { case(word, estimate) => wns.synonyms(word, POS.NOUN) -> estimate }
 
-  val pairs: Array[((String, String), Double)] = loadResources("/dangerous/dangerousPairs.txt").map(w => {
+  val verbsArr: Array[(Seq[String], Double)] = loadResources("/dangerous/dangerousVerbs.txt")
+    .map(w => {
+    val splitRes = w.split('/')
+    (splitRes(0), splitRes(1).toDouble)
+  }).map { case(word, estimator) => wns.synonyms(word, POS.VERB) -> estimator}
+
+  val pairsArr: Array[((String, String), Double)] = loadResources("/dangerous/dangerousPairs.txt").map(w => {
     val splitRes = w.split("/")
     ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
   })
+
   override def load(path: String): DangerousWordsTransformer = super.load(path)
 }

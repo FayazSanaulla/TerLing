@@ -19,6 +19,8 @@ object CustomPipeline extends App with SparkHelper {
   val training = positive.union(negative)
 
   val test = loadDF("/test/test.txt")
+  val test1 = loadDF("/test/test1.txt")
+  val test2 = loadDF("/test/test2.txt")
 
   //STAGES
   val textCleaner = new TextCleaner()
@@ -54,8 +56,6 @@ object CustomPipeline extends App with SparkHelper {
   val model = pipeline.fit(training)
 
   //PREDICTION
-  val prediction = model.transform(test)
+  val prediction = model.transform(test1)
     .select("sentences", "features", "probability", "prediction")
-
-  print(prediction)
 }
