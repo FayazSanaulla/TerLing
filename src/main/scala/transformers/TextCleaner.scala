@@ -29,7 +29,7 @@ class TextCleaner(override val uid: String = Identifiable.randomUID("textCleaner
         sentences
           .trim
           .flatMap(segmenter)
-          .map(_.replaceAll("[,!?:\\.&^%$*@()]", "")
+          .map(_.replaceAll("[,!?:\\.&^%$*@()\\']", "")
                 .replaceAll("""\[[0-9]+]""", "")
                 .replace('-', ' ')
                 .split(' ')
