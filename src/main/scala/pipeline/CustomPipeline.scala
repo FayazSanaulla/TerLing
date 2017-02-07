@@ -11,7 +11,7 @@ import utils.SparkHelper
   */
 object CustomPipeline extends App with SparkHelper {
 
-  override val loadPath: String = "/tmp/fitted-model-log-reg"
+  val path: String = "/tmp/fitted-model-log-reg"
 
   //DATA
   val positive = loadSeqDF("/pos", 1.0)

@@ -11,8 +11,6 @@ import org.apache.spark.sql.functions.lit
 trait SparkHelper extends SparkConfig {
   import spark.implicits._
 
-  val loadPath: String
-
   final def print(df: DataFrame): Unit = df.collect().foreach(println)
 
   final def loadSeqDF(name: String, label: Double): DataFrame = {
@@ -27,8 +25,8 @@ trait SparkHelper extends SparkConfig {
       .toDF("sentences")
   }
 
-  final def saveModel(model: PipelineModel): Unit = {
-    model.write.overwrite().save(loadPath)
+  final def saveModel(model: PipelineModel, path: String): Unit = {
+    model.write.overwrite().save(path)
   }
 
   final def loadModel(path: String): PipelineModel = {
