@@ -18,8 +18,8 @@ object CustomPipeline extends App with SparkHelper {
   val negative = loadSeqDF("/neg", 0.0)
   val training = positive.union(negative)
 
-  val test = loadDF("/test/test.txt")
-  val test1 = loadDF("/test/test1.txt")
+  val test = loadDF("/test/positive.txt")
+  val test1 = loadDF("/test/negative.txt")
   val test2 = loadDF("/test/test2.txt")
 
   //STAGES
@@ -58,5 +58,6 @@ object CustomPipeline extends App with SparkHelper {
   //PREDICTION
   val prediction = model.transform(test)
     .select("sentences", "probability", "prediction")
-    .show()
+
+  print(prediction)
 }

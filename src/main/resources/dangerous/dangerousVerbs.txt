@@ -1,1 +1,3 @@
 kill/0.7
+shot/0.8
+detonate/0.7
