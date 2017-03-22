@@ -24,6 +24,7 @@ class TextCleaner(override val uid: String = Identifiable.randomUID("textCleaner
     StructType(schema.fields :+ StructField(outputCol.name, StringType, nullable = false))
   }
   override def transform(dataset: Dataset[_]): DataFrame = {
+    //todo: optimize clean method
     val t = udf {
       sentences: String =>
         sentences

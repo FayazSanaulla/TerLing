@@ -42,6 +42,7 @@ object WordsRemover
   extends DefaultParamsReadable[WordsRemover]
     with ResourceLoader {
 
+  //todo: make more beaty impl
   val words: Array[String] = loadResources("/stopWords/english.txt")
 
   override def load(path: String): WordsRemover = super.load(path)

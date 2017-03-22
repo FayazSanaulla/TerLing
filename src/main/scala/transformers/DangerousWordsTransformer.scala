@@ -86,17 +86,20 @@ object DangerousWordsTransformer
 
   val wns = new WordNetService
 
+  //todo: move from RAM memory
   val nounsArr: Array[(Seq[String], Double)] = loadResources("/dangerous/dangerousNouns.txt").map(w => {
     val splitRes = w.split("/")
     (splitRes(0), splitRes(1).toDouble)
   }).map { case(word, estimate) => wns.synonyms(word, POS.NOUN) -> estimate }
 
+  //todo: and this
   val verbsArr: Array[(Seq[String], Double)] = loadResources("/dangerous/dangerousVerbs.txt")
     .map(w => {
     val splitRes = w.split('/')
     (splitRes(0), splitRes(1).toDouble)
   }).map { case(word, estimator) => wns.synonyms(word, POS.VERB) -> estimator}
 
+  //todo: and this
   val pairsArr: Array[((String, String), Double)] = loadResources("/dangerous/dangerousPairs.txt").map(w => {
     val splitRes = w.split("/")
     ((splitRes(0), splitRes(1)), splitRes(2).toDouble)
