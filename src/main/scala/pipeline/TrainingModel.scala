@@ -9,18 +9,14 @@ import utils.SparkHelper
 /**
   * Created by faiaz on 31.12.16.
   */
-object CustomPipeline extends App with SparkHelper {
+object TrainingModel extends App with SparkHelper {
 
-  val path: String = "/tmp/fitted-model-log-reg"
+  val path: String = "/home/faiaz/model"
 
   //DATA
   val positive = loadSeqDF("/pos", 1.0)
   val negative = loadSeqDF("/neg", 0.0)
   val training = positive.union(negative)
-
-  val test = loadDF("/test/positive.txt")
-  val test1 = loadDF("/test/negative.txt")
-  val test2 = loadDF("/test/test2.txt")
 
   //STAGES
   val textCleaner = new TextCleaner()
@@ -54,10 +50,5 @@ object CustomPipeline extends App with SparkHelper {
 
   //MODEL
   val model = pipeline.fit(training)
-
-  //PREDICTION
-  val prediction = model.transform(test)
-    .select("sentences", "probability", "prediction")
-
-  print(prediction)
+  saveModel(model, path)
 }

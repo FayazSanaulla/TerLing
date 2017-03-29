@@ -7,3 +7,11 @@ charge/0.9
 bombshell/0.9
 death/0.7
 nigger/0.6
+terrorist/0.8
+terror/0.7
+destruction/0.6
+ransom/0.5
+kidnap/0.8
+tanks/0.4
+weapon/0.3
+people/0.1

@@ -25,7 +25,9 @@ class WordsRemover(override val uid: String = Identifiable.randomUID("wordRemove
   override def transform(dataset: Dataset[_]): DataFrame = {
     val t  = udf { arr: mutable.WrappedArray[String] =>
       arr
-        .map(_.split(' ').filterNot(w => words.contains(w.toLowerCase)))
+        .map(_.split(' ')
+          .map(_.toLowerCase)
+          .filterNot(w => words.contains(w)))
         .map(_.mkString(" "))
     }
     dataset.select(col("*"), t(col($(inputCol))).as($(outputCol)))

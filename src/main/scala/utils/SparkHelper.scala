@@ -20,10 +20,11 @@ trait SparkHelper extends SparkConfig {
       .withColumn("label", lit(label))
   }
 
-  final def loadDF(path: String): DataFrame = {
-    sc.textFile(s"file:///home/faiaz/IdeaProjects/spark/src/main/resources/data$path")
-      .toDF("sentences")
+  final def loadTrainDF(path: String): DataFrame = {
+    sc.textFile(s"file:///home/faiaz/IdeaProjects/spark/src/main/resources/data$path").toDF("sentences")
   }
+
+  final def loadData(path: String): DataFrame = sc.textFile(path).toDF("sentences")
 
   final def saveModel(model: PipelineModel, path: String): Unit = {
     model.write.overwrite().save(path)
